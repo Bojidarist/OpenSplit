@@ -1,6 +1,56 @@
+:root {
+    --bg-color: #f0f0f0;
+    --container-bg: white;
+    --text-color: #333;
+    --timer-color: #007bff;
+    --timer-paused: #dc3545;
+    --button-bg: #007bff;
+    --button-hover: #0056b3;
+    --settings-bg: #28a745;
+    --settings-hover: #218838;
+    --pause-bg: #ffc107;
+    --pause-text: #212529;
+    --reset-bg: #dc3545;
+    --next-bg: #17a2b8;
+    --input-border: #ccc;
+    --splits-header-bg: #f8f9fa;
+    --splits-border: #ccc;
+    --modal-bg: #fefefe;
+    --modal-overlay: rgba(0,0,0,0.4);
+    --border-color: #ccc;
+    --split-border: #eee;
+    --close-color: #aaa;
+    --close-hover: black;
+}
+
+body.dark {
+    --bg-color: #0f172a;
+    --container-bg: #1e293b;
+    --text-color: #e2e8f0;
+    --timer-color: #60a5fa;
+    --timer-paused: #f87171;
+    --button-bg: #6366f1;
+    --button-hover: #4f46e5;
+    --settings-bg: #10b981;
+    --settings-hover: #059669;
+    --pause-bg: #f59e0b;
+    --pause-text: #1e293b;
+    --reset-bg: #ef4444;
+    --next-bg: #06b6d4;
+    --input-border: #475569;
+    --splits-header-bg: #334155;
+    --splits-border: #475569;
+    --modal-bg: #1e293b;
+    --modal-overlay: rgba(0,0,0,0.8);
+    --border-color: #475569;
+    --split-border: #374151;
+    --close-color: #cbd5e1;
+    --close-hover: #f1f5f9;
+}
+
 body {
     font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
+    background-color: var(--bg-color);
     margin: 0;
     padding: 0;
     display: flex;
@@ -13,7 +63,7 @@ body {
     position: absolute;
     top: 10px;
     right: 10px;
-    background-color: #28a745;
+    background-color: var(--settings-bg);
     color: white;
     border: none;
     padding: 8px 12px;
@@ -23,15 +73,19 @@ body {
 }
 
 .settings-btn:hover {
-    background-color: #218838;
+    background-color: var(--settings-hover);
 }
 
 .settings-btn:nth-child(2) {
     right: 100px;
 }
 
+.settings-btn:nth-child(3) {
+    right: 190px;
+}
+
 .container {
-    background-color: white;
+    background-color: var(--container-bg);
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -41,24 +95,28 @@ body {
 }
 
 h1 {
-    color: #333;
+    color: var(--text-color);
+}
+
+h2 {
+    color: var(--text-color);
 }
 
 .timer {
     font-size: 3em;
     font-weight: bold;
     margin: 20px 0;
-    color: #007bff;
+    color: var(--timer-color);
 }
 
 .timer.paused {
-    color: #dc3545;
+    color: var(--timer-paused);
 }
 
 .current-split {
     font-size: 1.2em;
     margin: 10px 0;
-    color: #333;
+    color: var(--text-color);
 }
 
 .predefined-section {
@@ -81,7 +139,8 @@ h1 {
     align-items: center;
     padding: 15px 0;
     margin-bottom: 15px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--split-border);
+    color: var(--text-color);
 }
 
 .split-item button {
@@ -104,7 +163,7 @@ h1 {
 }
 
 button {
-    background-color: #007bff;
+    background-color: var(--button-bg);
     color: white;
     border: none;
     padding: 10px 20px;
@@ -119,20 +178,20 @@ button:hover {
 }
 
 #start-btn {
-    background-color: #28a745;
+    background-color: var(--settings-bg);
 }
 
 #pause-btn {
-    background-color: #ffc107;
-    color: #212529;
+    background-color: var(--pause-bg);
+    color: var(--pause-text);
 }
 
 #reset-btn {
-    background-color: #dc3545;
+    background-color: var(--reset-bg);
 }
 
 #next-split-btn {
-    background-color: #17a2b8;
+    background-color: var(--next-bg);
 }
 
 .split-section {
@@ -141,7 +200,7 @@ button:hover {
 
 input {
     padding: 10px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--input-border);
     border-radius: 5px;
     margin-right: 10px;
     width: 200px;
@@ -149,8 +208,8 @@ input {
 
 .splits-header {
     display: flex;
-    background-color: #f8f9fa;
-    border: 1px solid #ccc;
+    background-color: var(--splits-header-bg);
+    border: 1px solid var(--splits-border);
     border-bottom: none;
     margin-top: 20px;
 }
@@ -160,12 +219,13 @@ input {
     padding: 10px;
     font-weight: bold;
     text-align: left;
+    color: var(--text-color);
 }
 
 .splits-container {
     max-height: 200px; /* Default, will be set by JS */
     overflow-y: auto;
-    border: 1px solid #ccc;
+    border: 1px solid var(--splits-border);
     border-top: none;
 }
 
@@ -176,13 +236,14 @@ input {
 
 .split-row {
     display: flex;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid var(--splits-border);
 }
 
 .split-row > div {
     flex: 1;
     padding: 10px;
     text-align: left;
+    color: var(--text-color);
 }
 
 /* Modal styles */
@@ -195,23 +256,22 @@ input {
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgb(0,0,0);
-    background-color: rgba(0,0,0,0.4);
+    background-color: var(--modal-overlay);
     padding-top: 60px;
 }
 
 .modal-content {
-    background-color: #fefefe;
+    background-color: var(--modal-bg);
     margin: 5% auto;
     padding: 20px;
-    border: 1px solid #888;
+    border: 1px solid var(--border-color);
     width: 80%;
     max-width: 400px;
     border-radius: 10px;
 }
 
 .close {
-    color: #aaa;
+    color: var(--close-color);
     float: right;
     font-size: 28px;
     font-weight: bold;
@@ -219,7 +279,7 @@ input {
 
 .close:hover,
 .close:focus {
-    color: black;
+    color: var(--close-hover);
     text-decoration: none;
     cursor: pointer;
 }
@@ -227,6 +287,7 @@ input {
 .modal label {
     display: block;
     margin-bottom: 8px;
+    color: var(--text-color);
 }
 
 .modal input {
@@ -237,7 +298,7 @@ input {
 }
 
 .modal button {
-    background-color: #007bff;
+    background-color: var(--button-bg);
     color: white;
     border: none;
     padding: 10px 20px;
@@ -246,16 +307,16 @@ input {
 }
 
 .modal button:hover {
-    background-color: #0056b3;
+    background-color: var(--button-hover);
 }
 
 #add-predefined-btn {
-    background-color: #28a745;
+    background-color: var(--settings-bg);
     margin: 10px 0;
 }
 
 #add-predefined-btn:hover {
-    background-color: #218838;
+    background-color: var(--settings-hover);
 }
 
 .modal-buttons {

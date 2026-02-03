@@ -1,7 +1,18 @@
 let ws;
 let serverIP = localStorage.getItem('timerServerIP') || 'localhost:8080';
-let predefinedSplits = [];
 let visibleSplits = parseInt(localStorage.getItem('visibleSplits')) || 5;
+let theme = localStorage.getItem('theme') || 'light';
+let predefinedSplits = [];
+
+function applyTheme() {
+    if (theme === 'dark') {
+        document.body.classList.add('dark');
+        document.getElementById('theme-toggle-btn').textContent = '☀️';
+    } else {
+        document.body.classList.remove('dark');
+        document.getElementById('theme-toggle-btn').textContent = '🌙';
+    }
+}
 
 function connectWS() {
     ws = new WebSocket(`ws://${serverIP}/ws`);
@@ -27,6 +38,7 @@ function connectWS() {
 }
 
 connectWS();
+applyTheme();
 
 function sendCommand(command, extra = {}) {
     const msg = { command, ...extra };
@@ -251,6 +263,12 @@ document.getElementById('import-splits-file').onchange = (event) => {
         };
         reader.readAsText(file);
     }
+};
+
+document.getElementById('theme-toggle-btn').onclick = () => {
+    theme = theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', theme);
+    applyTheme();
 };
 
 document.getElementById('start-btn').onclick = () => sendCommand('start');
