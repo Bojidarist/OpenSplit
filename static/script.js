@@ -58,11 +58,21 @@ function updateTimer(state) {
     // Update current split display
     const splitDisplay = document.getElementById('current-split-display');
     if (predefinedSplits.length > 0 && state.currentSplitIndex >= 0 && state.currentSplitIndex < predefinedSplits.length) {
-        splitDisplay.textContent = `Split ${state.currentSplitIndex + 1}: ${predefinedSplits[state.currentSplitIndex]}`;
+        splitDisplay.textContent = `${predefinedSplits[state.currentSplitIndex]}`;
     } else if (predefinedSplits.length > 0) {
         splitDisplay.textContent = 'Ready to start';
     } else {
         splitDisplay.textContent = 'No splits defined';
+    }
+
+    // Update previous segment display
+    const prevSegmentDisplay = document.getElementById('previous-segment');
+    if (state.splits && state.splits.length > 0) {
+        const lastSplit = state.splits[state.splits.length - 1];
+        const segTime = formatTime(lastSplit.segmentTime);
+        prevSegmentDisplay.textContent = `Previous Segment: ${segTime}`;
+    } else {
+        prevSegmentDisplay.textContent = 'Previous Segment: --';
     }
 
     // Show/hide next split button
@@ -84,10 +94,17 @@ function updateTimer(state) {
 
 function formatTime(durationMs) {
     const totalSeconds = Math.floor(durationMs / 1000000000);
-    const minutes = Math.floor(totalSeconds / 60);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
     const milliseconds = Math.floor((durationMs % 1000000000) / 1000000);
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+    
+    // Format like LiveSplit: show hours only if > 0
+    if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    } else {
+        return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0').substring(0, 2)}`;
+    }
 }
 
 function updateSplits(splits, predefinedSplits, currentSplitIndex) {
@@ -97,19 +114,34 @@ function updateSplits(splits, predefinedSplits, currentSplitIndex) {
         predefinedSplits.forEach((name, index) => {
             const row = document.createElement('div');
             row.className = 'split-row';
+            if (index === currentSplitIndex) {
+                row.classList.add('current');
+            }
+            
+            // Icon placeholder (using emoji as default)
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'split-icon';
+            iconSpan.textContent = '🏃';
+            
+            // Split name
             const nameDiv = document.createElement('div');
+            nameDiv.className = 'split-name';
             nameDiv.textContent = name;
-            const segmentDiv = document.createElement('div');
+            
+            // Cumulative time (right-aligned)
             const cumulativeDiv = document.createElement('div');
-            if (index <= currentSplitIndex && index < splits.length) {
-                segmentDiv.textContent = formatTime(splits[index].segmentTime);
+            cumulativeDiv.className = 'split-time';
+            if (index < currentSplitIndex && index < splits.length) {
+                cumulativeDiv.textContent = formatTime(splits[index].cumulativeTime);
+            } else if (index === currentSplitIndex && index < splits.length) {
+                // Show current running time
                 cumulativeDiv.textContent = formatTime(splits[index].cumulativeTime);
             } else {
-                segmentDiv.textContent = '--';
                 cumulativeDiv.textContent = '--';
             }
+            
+            row.appendChild(iconSpan);
             row.appendChild(nameDiv);
-            row.appendChild(segmentDiv);
             row.appendChild(cumulativeDiv);
             list.appendChild(row);
         });
@@ -118,14 +150,21 @@ function updateSplits(splits, predefinedSplits, currentSplitIndex) {
         splits.forEach(split => {
             const row = document.createElement('div');
             row.className = 'split-row';
+            
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'split-icon';
+            iconSpan.textContent = '🏃';
+            
             const nameDiv = document.createElement('div');
+            nameDiv.className = 'split-name';
             nameDiv.textContent = split.name;
-            const segmentDiv = document.createElement('div');
-            segmentDiv.textContent = formatTime(split.segmentTime);
+            
             const cumulativeDiv = document.createElement('div');
+            cumulativeDiv.className = 'split-time';
             cumulativeDiv.textContent = formatTime(split.cumulativeTime);
+            
+            row.appendChild(iconSpan);
             row.appendChild(nameDiv);
-            row.appendChild(segmentDiv);
             row.appendChild(cumulativeDiv);
             list.appendChild(row);
         });
