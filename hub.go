@@ -70,13 +70,28 @@ func (h *Hub) Run() {
 				h.timer.Reset()
 			case "setSplits":
 				if splits, ok := cmd["splits"].([]interface{}); ok {
-					var splitNames []string
+					var splitDefs []SplitDefinition
 					for _, s := range splits {
-						if name, ok := s.(string); ok {
-							splitNames = append(splitNames, name)
+						if splitMap, ok := s.(map[string]interface{}); ok {
+							name := ""
+							icon := "🏃"
+							if n, ok := splitMap["name"].(string); ok {
+								name = n
+							}
+							if i, ok := splitMap["icon"].(string); ok {
+								icon = i
+							}
+							splitDefs = append(splitDefs, SplitDefinition{
+								Name: name,
+								Icon: icon,
+							})
 						}
 					}
-					h.timer.SetPredefinedSplits(splitNames)
+					title := "OpenSplit"
+					if t, ok := cmd["title"].(string); ok {
+						title = t
+					}
+					h.timer.SetPredefinedSplits(splitDefs, title)
 				}
 			case "nextSplit":
 				h.timer.NextSplit()

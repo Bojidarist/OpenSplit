@@ -48,7 +48,17 @@
         <div class="modal-content">
             <span class="close splits-close">&times;</span>
              <h2>Manage Splits</h2>
+             <label for="timer-title">Timer Title:</label>
+             <input type="text" id="timer-title" placeholder="e.g., The Legend of Zelda" maxlength="100" value="OpenSplit">
+             <button id="save-title-btn">Save Title</button>
+             <hr style="margin: 15px 0; border-color: var(--split-border);">
+             <label for="predefined-name">Split name:</label>
              <input type="text" id="predefined-name" placeholder="Split name" maxlength="50">
+             <label for="split-icon">Split icon (optional):</label>
+             <div class="icon-upload-container">
+                 <input type="file" id="split-icon" accept="image/*">
+                 <span class="icon-preview" id="icon-preview">🏃</span>
+             </div>
              <button id="add-predefined-btn">Add Split</button>
              <div class="modal-buttons">
                  <button id="export-splits-btn">Export Splits</button>

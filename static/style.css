@@ -167,31 +167,6 @@ h2 {
     overflow-y: auto;
 }
 
-.split-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 0;
-    margin-bottom: 15px;
-    border-bottom: 1px solid var(--split-border);
-    color: var(--text-color);
-}
-
-.split-item button {
-    background-color: #dc3545 !important;
-    color: white !important;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 0.8em;
-    font-weight: bold;
-}
-
-.split-item button:hover {
-    background-color: #c82333 !important;
-}
-
 .buttons {
     margin: 0;
     padding: 10px;
@@ -308,6 +283,16 @@ input {
     height: 20px;
     margin-right: 8px;
     flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.split-row .split-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .split-row .split-name {
@@ -397,6 +382,16 @@ input {
     background-color: var(--settings-hover);
 }
 
+#save-title-btn {
+    background-color: var(--button-bg);
+    margin: 5px 0 10px 0;
+    width: 100%;
+}
+
+#save-title-btn:hover {
+    background-color: var(--button-hover);
+}
+
 .modal-buttons {
     display: flex;
     gap: 15px;
@@ -414,4 +409,70 @@ input {
 }
 
 #import-splits-btn {
+}
+
+.icon-upload-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.icon-upload-container input[type="file"] {
+    flex: 1;
+    width: auto;
+}
+
+.icon-preview {
+    font-size: 2em;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--split-border);
+    border-radius: 5px;
+    background-color: var(--splits-header-bg);
+}
+
+.icon-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.split-item-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.split-item-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.split-item-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.split-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--split-border);
+    color: var(--text-color);
+}
+
+.split-item-actions {
+    display: flex;
+    gap: 5px;
 }

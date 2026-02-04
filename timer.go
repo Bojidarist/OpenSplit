@@ -5,6 +5,12 @@ import (
 	"time"
 )
 
+// SplitDefinition represents a predefined split with name and icon
+type SplitDefinition struct {
+	Name string `json:"name"`
+	Icon string `json:"icon"` // base64 encoded image or emoji
+}
+
 // Split represents a single split with name, segment time, and cumulative time
 type Split struct {
 	Name           string        `json:"name"`
@@ -14,13 +20,14 @@ type Split struct {
 
 // TimerState holds the current state of the timer
 type TimerState struct {
-	CurrentTime       time.Duration `json:"currentTime"`
-	Status            string        `json:"status"` // "stopped", "running", "paused"
-	Splits            []Split       `json:"splits"`
-	PredefinedSplits  []string      `json:"predefinedSplits"`
-	CurrentSplitIndex int           `json:"currentSplitIndex"`
-	StartTime         time.Time     `json:"-"` // not serialized
-	PausedAt          time.Duration `json:"-"` // not serialized
+	CurrentTime       time.Duration     `json:"currentTime"`
+	Status            string            `json:"status"` // "stopped", "running", "paused"
+	Splits            []Split           `json:"splits"`
+	PredefinedSplits  []SplitDefinition `json:"predefinedSplits"`
+	TimerTitle        string            `json:"timerTitle"`
+	CurrentSplitIndex int               `json:"currentSplitIndex"`
+	StartTime         time.Time         `json:"-"` // not serialized
+	PausedAt          time.Duration     `json:"-"` // not serialized
 }
 
 // NewTimerState creates a new timer state
@@ -29,7 +36,8 @@ func NewTimerState() *TimerState {
 		CurrentTime:       0,
 		Status:            "stopped",
 		Splits:            []Split{},
-		PredefinedSplits:  []string{},
+		PredefinedSplits:  []SplitDefinition{},
+		TimerTitle:        "OpenSplit",
 		CurrentSplitIndex: -1,
 	}
 }
@@ -70,8 +78,9 @@ func (ts *TimerState) Reset() {
 }
 
 // SetPredefinedSplits sets the predefined splits
-func (ts *TimerState) SetPredefinedSplits(splits []string) {
+func (ts *TimerState) SetPredefinedSplits(splits []SplitDefinition, title string) {
 	ts.PredefinedSplits = splits
+	ts.TimerTitle = title
 	ts.CurrentSplitIndex = -1
 	if ts.Status == "stopped" {
 		ts.Splits = []Split{}
@@ -90,7 +99,7 @@ func (ts *TimerState) NextSplit() {
 	}
 	ts.CurrentTime = time.Since(ts.StartTime)
 	ts.Splits = append(ts.Splits, Split{
-		Name:           ts.PredefinedSplits[ts.CurrentSplitIndex],
+		Name:           ts.PredefinedSplits[ts.CurrentSplitIndex].Name,
 		SegmentTime:    segmentTime,
 		CumulativeTime: ts.CurrentTime,
 	})

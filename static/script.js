@@ -3,6 +3,8 @@ let serverIP = localStorage.getItem('timerServerIP') || 'localhost:8080';
 let visibleSplits = parseInt(localStorage.getItem('visibleSplits')) || 5;
 let theme = localStorage.getItem('theme') || 'light';
 let predefinedSplits = [];
+let timerTitle = 'OpenSplit';
+let currentIconPreview = '🏃';
 
 function applyTheme() {
     if (theme === 'dark') {
@@ -51,14 +53,34 @@ function updateTimer(state) {
     display.textContent = time;
     display.className = 'timer ' + (state.status === 'paused' ? 'paused' : '');
 
-    // Sync predefined splits from server
-    predefinedSplits = state.predefinedSplits || [];
+    // Sync predefined splits and title from server
+    // Convert old format (array of strings) to new format (array of objects)
+    if (state.predefinedSplits && Array.isArray(state.predefinedSplits)) {
+        predefinedSplits = state.predefinedSplits.map(split => {
+            if (typeof split === 'string') {
+                // Old format compatibility
+                return { name: split, icon: '🏃' };
+            } else if (split && typeof split === 'object') {
+                // New format
+                return { 
+                    name: split.name || 'Unnamed', 
+                    icon: split.icon || '🏃' 
+                };
+            }
+            return { name: 'Unnamed', icon: '🏃' };
+        });
+    } else {
+        predefinedSplits = [];
+    }
+    
+    timerTitle = state.timerTitle || 'OpenSplit';
+    document.getElementById('game-title').textContent = timerTitle;
     updatePredefinedList();
 
     // Update current split display
     const splitDisplay = document.getElementById('current-split-display');
     if (predefinedSplits.length > 0 && state.currentSplitIndex >= 0 && state.currentSplitIndex < predefinedSplits.length) {
-        splitDisplay.textContent = `${predefinedSplits[state.currentSplitIndex]}`;
+        splitDisplay.textContent = `${predefinedSplits[state.currentSplitIndex].name}`;
     } else if (predefinedSplits.length > 0) {
         splitDisplay.textContent = 'Ready to start';
     } else {
@@ -111,17 +133,38 @@ function updateSplits(splits, predefinedSplits, currentSplitIndex) {
     const list = document.getElementById('splits-body');
     list.innerHTML = '';
     if (predefinedSplits && predefinedSplits.length > 0) {
-        predefinedSplits.forEach((name, index) => {
+        predefinedSplits.forEach((splitDef, index) => {
             const row = document.createElement('div');
             row.className = 'split-row';
             if (index === currentSplitIndex) {
                 row.classList.add('current');
             }
             
-            // Icon placeholder (using emoji as default)
+            // Convert old format to new format if needed
+            let name, icon;
+            if (typeof splitDef === 'string') {
+                name = splitDef;
+                icon = '🏃';
+            } else if (splitDef && typeof splitDef === 'object') {
+                name = splitDef.name || 'Unnamed';
+                icon = splitDef.icon || '🏃';
+            } else {
+                name = 'Unnamed';
+                icon = '🏃';
+            }
+            
+            // Icon (emoji or image)
             const iconSpan = document.createElement('span');
             iconSpan.className = 'split-icon';
-            iconSpan.textContent = '🏃';
+            if (icon && icon.startsWith('data:image')) {
+                const img = document.createElement('img');
+                img.src = icon;
+                img.alt = 'icon';
+                iconSpan.innerHTML = '';
+                iconSpan.appendChild(img);
+            } else {
+                iconSpan.textContent = icon;
+            }
             
             // Split name
             const nameDiv = document.createElement('div');
@@ -225,6 +268,7 @@ const splitsCloseBtn = document.getElementsByClassName('splits-close')[0];
 
 splitsBtn.onclick = () => {
     updatePredefinedList();
+    document.getElementById('timer-title').value = timerTitle;
     splitsModal.style.display = 'block';
 };
 
@@ -245,17 +289,48 @@ window.onclick = (event) => {
 function updatePredefinedList() {
     const list = document.getElementById('predefined-list');
     list.innerHTML = '';
-    predefinedSplits.forEach((name, index) => {
+    predefinedSplits.forEach((splitDef, index) => {
         const item = document.createElement('div');
         item.className = 'split-item';
-        item.textContent = `${index + 1}. ${name}`;
+        
+        const content = document.createElement('div');
+        content.className = 'split-item-content';
+        
+        // Icon display
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'split-item-icon';
+        if (splitDef.icon && splitDef.icon.startsWith('data:image')) {
+            const img = document.createElement('img');
+            img.src = splitDef.icon;
+            img.alt = 'icon';
+            iconDiv.appendChild(img);
+        } else {
+            iconDiv.textContent = splitDef.icon || '🏃';
+        }
+        
+        const textSpan = document.createElement('span');
+        textSpan.textContent = `${index + 1}. ${splitDef.name}`;
+        
+        content.appendChild(iconDiv);
+        content.appendChild(textSpan);
+        
+        const actions = document.createElement('div');
+        actions.className = 'split-item-actions';
+        
         const removeBtn = document.createElement('button');
         removeBtn.textContent = 'Delete';
+        removeBtn.style.backgroundColor = '#dc3545';
+        removeBtn.style.color = 'white';
+        removeBtn.style.padding = '5px 10px';
+        removeBtn.style.fontSize = '0.8em';
         removeBtn.onclick = () => {
             predefinedSplits.splice(index, 1);
-            sendCommand('setSplits', { splits: predefinedSplits });
+            sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
         };
-        item.appendChild(removeBtn);
+        
+        actions.appendChild(removeBtn);
+        item.appendChild(content);
+        item.appendChild(actions);
         list.appendChild(item);
     });
 }
@@ -263,14 +338,55 @@ function updatePredefinedList() {
 document.getElementById('add-predefined-btn').onclick = () => {
     const name = document.getElementById('predefined-name').value.trim();
     if (name) {
-        predefinedSplits.push(name);
-        sendCommand('setSplits', { splits: predefinedSplits });
+        predefinedSplits.push({
+            name: name,
+            icon: currentIconPreview
+        });
+        const title = document.getElementById('timer-title').value.trim();
+        timerTitle = title || 'OpenSplit';
+        sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
         document.getElementById('predefined-name').value = '';
+        // Reset icon preview
+        currentIconPreview = '🏃';
+        const preview = document.getElementById('icon-preview');
+        preview.innerHTML = '🏃';
+        document.getElementById('split-icon').value = '';
+    }
+};
+
+// Save title button
+document.getElementById('save-title-btn').onclick = () => {
+    const title = document.getElementById('timer-title').value.trim();
+    timerTitle = title || 'OpenSplit';
+    sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
+};
+
+// Handle icon file upload
+document.getElementById('split-icon').onchange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            currentIconPreview = e.target.result;
+            const preview = document.getElementById('icon-preview');
+            preview.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'contain';
+            preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
     }
 };
 
 document.getElementById('export-splits-btn').onclick = () => {
-    const dataStr = JSON.stringify(predefinedSplits, null, 2);
+    const exportData = {
+        title: timerTitle,
+        splits: predefinedSplits
+    };
+    const dataStr = JSON.stringify(exportData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     const exportFileDefaultName = 'splits.json';
     const linkElement = document.createElement('a');
@@ -290,14 +406,31 @@ document.getElementById('import-splits-file').onchange = (event) => {
         reader.onload = (e) => {
             try {
                 const imported = JSON.parse(e.target.result);
-                if (Array.isArray(imported) && imported.every(item => typeof item === 'string')) {
-                    predefinedSplits = imported;
-                    sendCommand('setSplits', { splits: predefinedSplits });
+                
+                // Support both old format (array of strings) and new format (object with title and splits)
+                if (Array.isArray(imported)) {
+                    // Old format: array of strings
+                    predefinedSplits = imported.map(name => ({
+                        name: typeof name === 'string' ? name : name.name || '',
+                        icon: typeof name === 'object' ? (name.icon || '🏃') : '🏃'
+                    }));
+                    timerTitle = 'OpenSplit';
+                } else if (imported.splits && Array.isArray(imported.splits)) {
+                    // New format: object with title and splits
+                    timerTitle = imported.title || 'OpenSplit';
+                    predefinedSplits = imported.splits.map(split => ({
+                        name: split.name || '',
+                        icon: split.icon || '🏃'
+                    }));
                 } else {
-                    alert('Invalid JSON format. Expected an array of strings.');
+                    alert('Invalid JSON format. Expected an array or an object with "splits" array.');
+                    return;
                 }
+                
+                sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
+                document.getElementById('timer-title').value = timerTitle;
             } catch (err) {
-                alert('Error parsing JSON file.');
+                alert('Error parsing JSON file: ' + err.message);
             }
         };
         reader.readAsText(file);

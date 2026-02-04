@@ -24,13 +24,13 @@ const (
 	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
 
-	// Maximum message size allowed from peer.
-	maxMessageSize = 512
+	// Maximum message size allowed from peer (10MB to support base64 images)
+	maxMessageSize = 10 * 1024 * 1024
 )
 
 var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
+	ReadBufferSize:  1024 * 1024, // 1MB read buffer
+	WriteBufferSize: 1024 * 1024, // 1MB write buffer
 	CheckOrigin: func(r *http.Request) bool {
 		// Allow connections from any origin for simplicity
 		return true
