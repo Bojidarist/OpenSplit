@@ -132,10 +132,10 @@ body {
     min-width: 400px;
     width: 90%;
     overflow: auto;
-    resize: both;
+    resize: horizontal;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    height: 100vh;
 }
 
 /* Responsive container */
@@ -144,6 +144,7 @@ body {
         max-width: 500px;
         min-width: 320px;
         width: 95%;
+        height: 100vh;
     }
 }
 
@@ -163,6 +164,7 @@ body {
         max-width: 100%;
         min-width: 280px;
         width: 100%;
+        height: 100vh;
     }
 }
 
