@@ -5,6 +5,9 @@ let theme = localStorage.getItem('theme') || 'dark'; // Default to dark mode
 let predefinedSplits = [];
 let timerTitle = 'OpenSplit';
 let currentIconPreview = '🏃';
+let containerWidth = parseInt(localStorage.getItem('containerWidth')) || 600;
+const MIN_CONTAINER_WIDTH = 400;
+const MAX_CONTAINER_WIDTH = 600;
 
 function applyTheme() {
     // Remove both classes first
@@ -44,6 +47,20 @@ function connectWS() {
 
 connectWS();
 applyTheme();
+
+const container = document.querySelector('.container');
+container.style.width = containerWidth + 'px';
+
+const resizeObserver = new ResizeObserver(entries => {
+    for (let entry of entries) {
+        const newWidth = Math.round(entry.contentRect.width);
+        if (newWidth !== containerWidth) {
+            containerWidth = newWidth;
+            localStorage.setItem('containerWidth', containerWidth);
+        }
+    }
+});
+resizeObserver.observe(container);
 
 function sendCommand(command, extra = {}) {
     const msg = { command, ...extra };
@@ -259,6 +276,7 @@ const splitsCloseBtn = document.getElementsByClassName('splits-close')[0];
 splitsBtn.onclick = () => {
     updatePredefinedList();
     document.getElementById('timer-title').value = timerTitle;
+    document.getElementById('container-width').value = containerWidth;
     splitsModal.style.display = 'block';
 };
 
@@ -351,6 +369,18 @@ document.getElementById('save-title-btn').onclick = () => {
     sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
 };
 
+// Save width button
+document.getElementById('save-width-btn').onclick = () => {
+    const width = parseInt(document.getElementById('container-width').value);
+    if (width >= MIN_CONTAINER_WIDTH && width <= MAX_CONTAINER_WIDTH) {
+        containerWidth = width;
+        container.style.width = width + 'px';
+        localStorage.setItem('containerWidth', containerWidth);
+    } else {
+        alert(`Width must be between ${MIN_CONTAINER_WIDTH} and ${MAX_CONTAINER_WIDTH} px`);
+    }
+};
+
 // Handle icon file upload
 document.getElementById('split-icon').onchange = (event) => {
     const file = event.target.files[0];
@@ -374,7 +404,8 @@ document.getElementById('split-icon').onchange = (event) => {
 document.getElementById('export-splits-btn').onclick = () => {
     const exportData = {
         title: timerTitle,
-        splits: predefinedSplits
+        splits: predefinedSplits,
+        containerWidth: containerWidth
     };
     const dataStr = JSON.stringify(exportData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
@@ -415,14 +446,22 @@ document.getElementById('import-splits-file').onchange = (event) => {
                         icon: typeof name === 'object' ? (name.icon || '🏃') : '🏃'
                     }));
                     timerTitle = 'OpenSplit';
-                } else if (imported.splits && Array.isArray(imported.splits)) {
-                    // New format: object with title and splits
-                    timerTitle = imported.title || 'OpenSplit';
-                    predefinedSplits = imported.splits.map(split => ({
-                        name: split.name || '',
-                        icon: split.icon || '🏃'
-                    }));
-                } else {
+                 } else if (imported.splits && Array.isArray(imported.splits)) {
+                     // New format: object with title and splits
+                     timerTitle = imported.title || 'OpenSplit';
+                     predefinedSplits = imported.splits.map(split => ({
+                         name: split.name || '',
+                         icon: split.icon || '🏃'
+                     }));
+                     if (imported.containerWidth) {
+                         containerWidth = imported.containerWidth;
+                         container.style.width = containerWidth + 'px';
+                         localStorage.setItem('containerWidth', containerWidth);
+                         if (splitsModal.style.display === 'block') {
+                             document.getElementById('container-width').value = containerWidth;
+                         }
+                     }
+                 } else {
                     alert('Invalid JSON format. Expected an array or an object with "splits" array.');
                     isImporting = false;
                     return;
