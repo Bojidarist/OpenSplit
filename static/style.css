@@ -3,6 +3,7 @@
     --container-bg: #1a1a1a;
     --text-color: #e0e0e0;
     --timer-color: #00ff88;
+    --timer-bg: #0f0f0f;
     --timer-paused: #ff4444;
     --button-bg: #333333;
     --button-hover: #444444;
@@ -25,11 +26,41 @@
     --split-hover-bg: #222222;
 }
 
+body.light {
+    --bg-color: #f0f0f0;
+    --container-bg: white;
+    --text-color: #333;
+    --timer-color: #00aa55;
+    --timer-bg: #e8e8e8;
+    --timer-paused: #cc0000;
+    --button-bg: #007bff;
+    --button-hover: #0056b3;
+    --settings-bg: #28a745;
+    --settings-hover: #218838;
+    --pause-bg: #ffc107;
+    --pause-text: #212529;
+    --reset-bg: #dc3545;
+    --next-bg: #17a2b8;
+    --input-border: #ccc;
+    --splits-header-bg: #f8f9fa;
+    --splits-border: #ccc;
+    --modal-bg: #fefefe;
+    --modal-overlay: rgba(0,0,0,0.4);
+    --border-color: #ccc;
+    --split-border: #eee;
+    --close-color: #aaa;
+    --close-hover: black;
+    --current-split-bg: #d0e8ff;
+    --split-hover-bg: #f5f5f5;
+}
+
+/* Keep dark class for backward compatibility */
 body.dark {
     --bg-color: #0a0a0a;
     --container-bg: #1a1a1a;
     --text-color: #e0e0e0;
     --timer-color: #00ff88;
+    --timer-bg: #0f0f0f;
     --timer-paused: #ff4444;
     --button-bg: #333333;
     --button-hover: #444444;
@@ -97,20 +128,45 @@ body {
     border-radius: 0;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
     text-align: center;
-    max-width: 400px;
-    width: 100%;
+    max-width: 600px;
+    min-width: 400px;
+    width: 90%;
     overflow: hidden;
+}
+
+/* Responsive container */
+@media (max-width: 768px) {
+    .container {
+        max-width: 500px;
+        min-width: 320px;
+        width: 95%;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        max-width: 100%;
+        min-width: 280px;
+        width: 100%;
+    }
 }
 
 h1 {
     color: var(--text-color);
-    font-size: 0.9em;
+    font-size: 1em;
     margin: 0;
-    padding: 8px;
+    padding: 10px 12px;
     background-color: var(--splits-header-bg);
     border-bottom: 1px solid var(--split-border);
     font-weight: normal;
     text-align: left;
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 0.9em;
+        padding: 8px 10px;
+    }
 }
 
 h2 {
@@ -118,14 +174,31 @@ h2 {
 }
 
 .timer {
-    font-size: 4em;
+    font-size: 4.5em;
     font-weight: bold;
     margin: 0;
-    padding: 20px;
+    padding: 25px 15px;
     color: var(--timer-color);
-    background-color: #0f0f0f;
+    background-color: var(--timer-bg);
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* Responsive timer size */
+@media (max-width: 768px) {
+    .timer {
+        font-size: 3.5em;
+        padding: 20px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .timer {
+        font-size: 2.5em;
+        padding: 15px 10px;
+    }
 }
 
 .timer.paused {
@@ -133,9 +206,9 @@ h2 {
 }
 
 .previous-segment {
-    font-size: 0.85em;
+    font-size: 0.95em;
     margin: 0;
-    padding: 6px 10px;
+    padding: 8px 12px;
     color: var(--text-color);
     background-color: var(--splits-header-bg);
     border-top: 1px solid var(--split-border);
@@ -143,14 +216,28 @@ h2 {
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
+@media (max-width: 480px) {
+    .previous-segment {
+        font-size: 0.85em;
+        padding: 6px 10px;
+    }
+}
+
 .current-split {
-    font-size: 0.85em;
+    font-size: 0.95em;
     margin: 0;
-    padding: 6px 8px;
+    padding: 8px 12px;
     color: var(--text-color);
     background-color: var(--splits-header-bg);
     border-bottom: 1px solid var(--split-border);
     text-align: left;
+}
+
+@media (max-width: 480px) {
+    .current-split {
+        font-size: 0.85em;
+        padding: 6px 10px;
+    }
 }
 
 .predefined-section {
@@ -169,23 +256,37 @@ h2 {
 
 .buttons {
     margin: 0;
-    padding: 10px;
+    padding: 12px;
     background-color: var(--splits-header-bg);
     border-top: 1px solid var(--split-border);
     display: flex;
-    gap: 8px;
+    gap: 10px;
     justify-content: center;
+}
+
+@media (max-width: 480px) {
+    .buttons {
+        padding: 10px;
+        gap: 8px;
+    }
 }
 
 button {
     background-color: var(--button-bg);
     color: white;
     border: 1px solid var(--split-border);
-    padding: 8px 16px;
+    padding: 10px 18px;
     margin: 0;
     border-radius: 3px;
     cursor: pointer;
-    font-size: 0.85em;
+    font-size: 0.9em;
+}
+
+@media (max-width: 480px) {
+    button {
+        padding: 8px 14px;
+        font-size: 0.85em;
+    }
 }
 
 button:hover {
@@ -259,7 +360,7 @@ input {
 .split-row {
     display: flex;
     border-bottom: 1px solid var(--split-border);
-    padding: 8px 10px;
+    padding: 10px 12px;
     transition: background-color 0.15s;
     align-items: center;
 }
@@ -275,13 +376,13 @@ input {
 .split-row > div {
     text-align: left;
     color: var(--text-color);
-    font-size: 0.9em;
+    font-size: 1em;
 }
 
 .split-row .split-icon {
-    width: 20px;
-    height: 20px;
-    margin-right: 8px;
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
     flex-shrink: 0;
     overflow: hidden;
     display: flex;
@@ -305,8 +406,29 @@ input {
 .split-row .split-time {
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     text-align: right;
-    min-width: 80px;
-    margin-left: 10px;
+    min-width: 90px;
+    margin-left: 12px;
+}
+
+@media (max-width: 480px) {
+    .split-row {
+        padding: 8px 10px;
+    }
+    
+    .split-row > div {
+        font-size: 0.9em;
+    }
+    
+    .split-row .split-icon {
+        width: 20px;
+        height: 20px;
+        margin-right: 8px;
+    }
+    
+    .split-row .split-time {
+        min-width: 75px;
+        margin-left: 8px;
+    }
 }
 
 /* Modal styles */

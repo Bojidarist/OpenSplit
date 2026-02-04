@@ -1,18 +1,21 @@
 let ws;
 let serverIP = localStorage.getItem('timerServerIP') || 'localhost:8080';
 let visibleSplits = parseInt(localStorage.getItem('visibleSplits')) || 5;
-let theme = localStorage.getItem('theme') || 'light';
+let theme = localStorage.getItem('theme') || 'dark'; // Default to dark mode
 let predefinedSplits = [];
 let timerTitle = 'OpenSplit';
 let currentIconPreview = '🏃';
 
 function applyTheme() {
-    if (theme === 'dark') {
+    // Remove both classes first
+    document.body.classList.remove('dark', 'light');
+    
+    if (theme === 'light') {
+        document.body.classList.add('light');
+        document.getElementById('theme-toggle-btn').textContent = '🌙';
+    } else {
         document.body.classList.add('dark');
         document.getElementById('theme-toggle-btn').textContent = '☀️';
-    } else {
-        document.body.classList.remove('dark');
-        document.getElementById('theme-toggle-btn').textContent = '🌙';
     }
 }
 
