@@ -1,6 +1,6 @@
 let ws;
 let serverIP = localStorage.getItem('timerServerIP') || 'localhost:8080';
-let visibleSplits = parseInt(localStorage.getItem('visibleSplits')) || 5;
+let visibleSplits = 5;
 let theme = localStorage.getItem('theme') || 'dark'; // Default to dark mode
 let predefinedSplits = [];
 let timerTitle = 'OpenSplit';
@@ -215,13 +215,6 @@ function updateSplits(splits, predefinedSplits, currentSplitIndex) {
             list.appendChild(row);
         });
     }
-    updateTableHeight();
-}
-
-function updateTableHeight() {
-    const container = document.querySelector('.splits-container');
-    const rowHeight = 40; // Approximate height per row based on CSS
-    container.style.maxHeight = (visibleSplits * rowHeight) + 'px';
 }
 
 // Settings modal
@@ -233,7 +226,6 @@ const wsIpInput = document.getElementById('ws-ip');
 
 settingsBtn.onclick = () => {
     wsIpInput.value = serverIP;
-    document.getElementById('visible-splits').value = visibleSplits;
     modal.style.display = 'block';
 };
 
@@ -249,18 +241,13 @@ window.onclick = (event) => {
 
 saveSettingsBtn.onclick = () => {
     const newIP = wsIpInput.value.trim();
-    const newVisible = parseInt(document.getElementById('visible-splits').value);
-    if (newIP && newVisible > 0) {
+    if (newIP) {
         serverIP = newIP;
-        visibleSplits = newVisible;
         localStorage.setItem('timerServerIP', serverIP);
-        localStorage.setItem('visibleSplits', visibleSplits);
         modal.style.display = 'none';
-        updateTableHeight();
         // Reconnect with new IP
         ws.close();
-connectWS();
-updateTableHeight();
+        connectWS();
     }
 };
 
@@ -398,17 +385,27 @@ document.getElementById('export-splits-btn').onclick = () => {
     linkElement.click();
 };
 
+let isImporting = false;
+
 document.getElementById('import-splits-btn').onclick = () => {
+    if (isImporting) return;
     document.getElementById('import-splits-file').click();
 };
 
 document.getElementById('import-splits-file').onchange = (event) => {
     const file = event.target.files[0];
-    if (file) {
+    if (file && !isImporting) {
+        isImporting = true;
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const imported = JSON.parse(e.target.result);
+                const text = e.target.result.trim().replace(/^\ufeff/, '');
+                if (!text.startsWith('{') && !text.startsWith('[')) {
+                    alert('Invalid file format: expected JSON object or array');
+                    isImporting = false;
+                    return;
+                }
+                const imported = JSON.parse(text);
                 
                 // Support both old format (array of strings) and new format (object with title and splits)
                 if (Array.isArray(imported)) {
@@ -427,16 +424,25 @@ document.getElementById('import-splits-file').onchange = (event) => {
                     }));
                 } else {
                     alert('Invalid JSON format. Expected an array or an object with "splits" array.');
+                    isImporting = false;
                     return;
                 }
                 
                 sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
                 document.getElementById('timer-title').value = timerTitle;
+                document.getElementById('import-splits-file').value = '';
             } catch (err) {
-                alert('Error parsing JSON file: ' + err.message);
+                alert('Error parsing JSON: ' + err.name + ' - ' + err.message);
             }
+            isImporting = false;
+        };
+        reader.onerror = (e) => {
+            alert('File read error: ' + (e.target.error ? e.target.error.message : 'Unknown error'));
+            isImporting = false;
         };
         reader.readAsText(file);
+    } else {
+        isImporting = false;
     }
 };
 

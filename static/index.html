@@ -8,27 +8,31 @@
 </head>
 <body>
     <div class="container">
-        <h1 id="game-title">OpenSplit Timer</h1>
-        <button id="settings-btn" class="settings-btn">Settings</button>
-        <button id="splits-btn" class="settings-btn">Splits</button>
-        <button id="theme-toggle-btn" class="settings-btn">🌙</button>
-        <div id="current-split-display" class="current-split">No splits defined</div>
-        <div class="splits-container">
-            <div id="splits-body" class="splits-list">
+        <div class="top-section">
+            <h1 id="game-title">OpenSplit Timer</h1>
+            <button id="settings-btn" class="settings-btn">Settings</button>
+            <button id="splits-btn" class="settings-btn">Splits</button>
+            <button id="theme-toggle-btn" class="settings-btn">🌙</button>
+            <div id="current-split-display" class="current-split">No splits defined</div>
+            <div class="splits-container">
+                <div id="splits-body" class="splits-list">
+                </div>
+            </div>
+            <div class="splits-header">
+                <div>Split Name</div>
+                <div>Segment Time</div>
+                <div>Cumulative Time</div>
             </div>
         </div>
-        <div id="timer-display" class="timer">00:00.000</div>
-        <div id="previous-segment" class="previous-segment">Previous Segment</div>
-        <div class="buttons">
-            <button id="start-btn">Start</button>
-            <button id="pause-btn">Pause</button>
-            <button id="reset-btn">Reset</button>
-            <button id="next-split-btn" style="display:none;">Next Split</button>
-        </div>
-        <div class="splits-header">
-            <div>Split Name</div>
-            <div>Segment Time</div>
-            <div>Cumulative Time</div>
+        <div class="bottom-section">
+            <div id="timer-display" class="timer">00:00.000</div>
+            <div id="previous-segment" class="previous-segment">Previous Segment</div>
+            <div class="buttons">
+                <button id="start-btn">Start</button>
+                <button id="pause-btn">Pause</button>
+                <button id="reset-btn">Reset</button>
+                <button id="next-split-btn" style="display:none;">Next Split</button>
+            </div>
         </div>
     </div>
 
@@ -36,11 +40,9 @@
         <div class="modal-content">
             <span class="close">&times;</span>
              <h2>Settings</h2>
-             <label for="ws-ip">WebSocket Server IP:</label>
-             <input type="text" id="ws-ip" placeholder="e.g., 192.168.1.100:8080">
-             <label for="visible-splits">Visible Splits:</label>
-             <input type="number" id="visible-splits" min="1" max="50" value="5">
-             <button id="save-settings">Save</button>
+              <label for="ws-ip">WebSocket Server IP:</label>
+              <input type="text" id="ws-ip" placeholder="e.g., 192.168.1.100:8080">
+              <button id="save-settings">Save</button>
         </div>
     </div>
 
