@@ -222,7 +222,7 @@ const modal = document.getElementById('settings-modal');
 const settingsBtn = document.getElementById('settings-btn');
 const closeBtn = document.getElementsByClassName('close')[0];
 const saveSettingsBtn = document.getElementById('save-settings');
-const wsIpInput = document.getElementById('ws-ip');
+const wsIpInput = document.getElementById('wsip');
 
 settingsBtn.onclick = () => {
     wsIpInput.value = serverIP;
