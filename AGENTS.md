@@ -155,6 +155,11 @@ function connectWS() {
 2. Open `http://localhost:8080` in browser
 3. Test WebSocket functionality across multiple tabs/devices
 
+#### Server Logging
+- Server logs are written to `server.log` in the current directory
+- Use `cat server.log` to view current logs or `tail -f server.log` to monitor in real-time
+- Check server logs when debugging WebSocket connections or server errors
+
 #### Adding New Features
 1. For timer features: Modify TimerState methods and hub command handling
 2. For UI features: Update HTML, CSS, and JavaScript in static/ directory
