@@ -51,6 +51,65 @@ applyTheme();
 const container = document.querySelector('.container');
 container.style.width = containerWidth + 'px';
 
+// Resize handles functionality
+let isResizing = false;
+let currentHandle = null;
+let startX = 0;
+let startWidth = 0;
+
+const leftHandle = document.querySelector('.resize-handle.left');
+const rightHandle = document.querySelector('.resize-handle.right');
+
+function startResize(e, handle) {
+    isResizing = true;
+    currentHandle = handle;
+    startX = e.clientX;
+    startWidth = container.offsetWidth;
+    
+    // Prevent text selection during resize
+    e.preventDefault();
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'ew-resize';
+}
+
+function doResize(e) {
+    if (!isResizing) return;
+    
+    let newWidth;
+    if (currentHandle === 'left') {
+        // Dragging left edge - subtract the delta to resize
+        const delta = e.clientX - startX;
+        newWidth = startWidth - delta;
+    } else {
+        // Dragging right edge - add the delta to resize
+        const delta = e.clientX - startX;
+        newWidth = startWidth + delta;
+    }
+    
+    // Constrain width between min and max
+    newWidth = Math.max(MIN_CONTAINER_WIDTH, Math.min(MAX_CONTAINER_WIDTH, newWidth));
+    
+    container.style.width = newWidth + 'px';
+    containerWidth = newWidth;
+}
+
+function stopResize() {
+    if (isResizing) {
+        isResizing = false;
+        currentHandle = null;
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        
+        // Save the final width
+        localStorage.setItem('containerWidth', containerWidth);
+    }
+}
+
+leftHandle.addEventListener('mousedown', (e) => startResize(e, 'left'));
+rightHandle.addEventListener('mousedown', (e) => startResize(e, 'right'));
+document.addEventListener('mousemove', doResize);
+document.addEventListener('mouseup', stopResize);
+
 const resizeObserver = new ResizeObserver(entries => {
     for (let entry of entries) {
         const newWidth = Math.round(entry.contentRect.width);

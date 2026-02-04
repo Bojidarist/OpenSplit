@@ -7,12 +7,18 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="setting-buttons-container">
+    <div class="settings-button-container">
+        <button id="settings-btn" class="settings-btn">Settings</button>
+        <button id="splits-btn" class="settings-btn">Splits</button>
+        <button id="theme-toggle-btn" class="settings-btn">🌙</button>
+    </div>
+    </div>
     <div class="container">
+        <div class="resize-handle left"></div>
+        <div class="resize-handle right"></div>
         <div class="top-section">
             <h1 id="game-title">OpenSplit Timer</h1>
-            <button id="settings-btn" class="settings-btn">Settings</button>
-            <button id="splits-btn" class="settings-btn">Splits</button>
-            <button id="theme-toggle-btn" class="settings-btn">🌙</button>
             <div id="current-split-display" class="current-split">No splits defined</div>
             <div class="splits-container">
                 <div id="splits-body" class="splits-list">

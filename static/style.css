@@ -94,32 +94,29 @@ body {
     min-height: 100vh;
 }
 
-.settings-btn {
+.settings-button-container {
     position: absolute;
-    top: 3px;
-    right: 3px;
+    top: 5px;
+    right: 15px;
+    display: flex;
+    gap: 12px;
+}
+
+.settings-btn {
     background-color: transparent;
     color: var(--text-color);
     border: none;
-    padding: 6px 10px;
-    border-radius: 3px;
+    padding: 8px 12px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 0.75em;
-    opacity: 0.6;
+    font-size: 0.8em;
+    opacity: 0.7;
     transition: opacity 0.2s;
 }
 
 .settings-btn:hover {
     background-color: var(--button-hover);
     opacity: 1;
-}
-
-.settings-btn:nth-child(2) {
-    right: 70px;
-}
-
-.settings-btn:nth-child(3) {
-    right: 140px;
 }
 
 .container {
@@ -132,10 +129,32 @@ body {
     min-width: 400px;
     width: 90%;
     overflow: auto;
-    resize: horizontal;
     display: flex;
     flex-direction: column;
     height: 100vh;
+    position: relative;
+}
+
+.resize-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: ew-resize;
+    z-index: 0;
+    transition: background-color 0.2s;
+}
+
+.resize-handle:hover {
+    background-color: rgba(128, 128, 128, 0.3);
+}
+
+.resize-handle.left {
+    left: 0;
+}
+
+.resize-handle.right {
+    right: 0;
 }
 
 /* Responsive container */
@@ -551,11 +570,6 @@ input {
     max-width: 150px;
 }
 
-#export-splits-btn {
-}
-
-#import-splits-btn {
-}
 
 .icon-upload-container {
     display: flex;
