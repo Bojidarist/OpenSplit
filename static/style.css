@@ -153,13 +153,20 @@ body {
 
 h1 {
     color: var(--text-color);
-    font-size: 1em;
+    font-size: 1.1em;
     margin: 0;
     padding: 10px 12px;
     background-color: var(--splits-header-bg);
     border-bottom: 1px solid var(--split-border);
     font-weight: normal;
     text-align: left;
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1em;
+        padding: 8px 10px;
+    }
 }
 
 @media (max-width: 480px) {
