@@ -9,6 +9,14 @@ A web-based speedrun timer application with real-time synchronization across mul
 - Real-time sync via WebSockets
 - Export and import splits in JSON format
 
+## Installation
+
+1. Go to [releases](https://github.com/Bojidarist/OpenSplit/releases) and download the latest version for your platform.
+2. Extract the archive.
+3. Run the binary, this will run the server.
+
+    The server runs on port 8080. Open `http://localhost:8080` in your browser. For multi-device access, use the server's IP address (can be configured from settings menu).
+
 ## Build from source
 
 1. Ensure you have Go installed (version 1.16+).
@@ -25,5 +33,3 @@ A web-based speedrun timer application with real-time synchronization across mul
     # Linux
     GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -trimpath -o build/opensplit
     ```
-
-The server runs on port 8080. Open `http://localhost:8080` in your browser. For multi-device access, use the server's IP address (can be configured from settings menu).
