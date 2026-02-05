@@ -19,11 +19,11 @@ A web-based speedrun timer application with real-time synchronization across mul
     ```
 4. Build
     ```
-    go build -ldflags "-s -w" -trimpath -o build/opensplit
-    ```
-5. Run
-    ```
-    ./build/opensplit
+    # Windows
+    GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -trimpath -o build/opensplit.exe
+
+    # Linux
+    GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -trimpath -o build/opensplit
     ```
 
 The server runs on port 8080. Open `http://localhost:8080` in your browser. For multi-device access, use the server's IP address (can be configured from settings menu).
