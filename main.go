@@ -1,9 +1,14 @@
 package main
 
 import (
+	"embed"
+	"io/fs"
 	"log"
 	"net/http"
 )
+
+//go:embed static/*
+var staticFS embed.FS
 
 func main() {
 	hub := NewHub()
@@ -13,7 +18,8 @@ func main() {
 		ServeWs(hub, w, r)
 	})
 
-	http.Handle("/", http.FileServer(http.Dir("./static/")))
+	staticSub, _ := fs.Sub(staticFS, "static")
+	http.Handle("/", http.FileServer(http.FS(staticSub)))
 
 	log.Println("Server starting on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
