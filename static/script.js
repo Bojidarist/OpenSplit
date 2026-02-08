@@ -199,6 +199,27 @@ function updateTimer(state) {
     // Show/hide next split button
     const nextBtn = document.getElementById('next-split-btn');
     nextBtn.style.display = (state.status === 'running' && predefinedSplits.length > 0) ? 'inline-block' : 'none';
+    
+    // Determine if run is completed (stopped with all splits completed)
+    const runCompleted = state.status === 'stopped' && state.currentSplitIndex === -1 && state.splits && state.splits.length > 0;
+    
+    // Show/hide buttons based on status
+    const startBtn = document.getElementById('start-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    
+    if (runCompleted) {
+        // Run is complete - only show reset button
+        startBtn.style.display = 'none';
+        pauseBtn.style.display = 'none';
+    } else if (state.status === 'stopped') {
+        // Stopped/reset - show start button, hide pause
+        startBtn.style.display = 'inline-block';
+        pauseBtn.style.display = 'none';
+    } else {
+        // Running or paused - hide start, show pause
+        startBtn.style.display = 'none';
+        pauseBtn.style.display = 'inline-block';
+    }
 
     updateSplits(state);
 
@@ -242,9 +263,15 @@ function updateSplits(state) {
             row.className = 'split-row';
             
             // Add highlighting classes
-            if (index < currentSplitIndex) {
+            // If currentSplitIndex is -1, all splits are completed (run finished)
+            if (currentSplitIndex === -1 && splits.length > 0) {
+                // All splits completed
                 row.classList.add('completed');
-            } else if (index === currentSplitIndex) {
+            } else if (index < currentSplitIndex) {
+                // Past splits that have been completed
+                row.classList.add('completed');
+            } else if (index === currentSplitIndex && state.status === 'running') {
+                // Current active split
                 row.classList.add('current');
             }
             
@@ -302,10 +329,8 @@ function updateSplits(state) {
             // Cumulative time (right-aligned)
             const cumulativeDiv = document.createElement('div');
             cumulativeDiv.className = 'split-time';
-            if (index < currentSplitIndex && index < splits.length) {
-                cumulativeDiv.textContent = formatTime(splits[index].cumulativeTime);
-            } else if (index === currentSplitIndex && index < splits.length) {
-                // Show current running time
+            // Show time if split is completed (index < splits.length)
+            if (index < splits.length) {
                 cumulativeDiv.textContent = formatTime(splits[index].cumulativeTime);
             } else {
                 cumulativeDiv.textContent = '--';

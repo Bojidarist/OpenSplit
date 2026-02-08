@@ -62,6 +62,10 @@ func (ts *TimerState) Start() {
 	case "stopped":
 		ts.StartTime = now
 		ts.PausedAt = 0
+		// Set current split index to 0 (first split) when starting from stopped
+		if len(ts.PredefinedSplits) > 0 {
+			ts.CurrentSplitIndex = 0
+		}
 	case "paused":
 		ts.StartTime = now.Add(-ts.PausedAt)
 	}
@@ -109,10 +113,11 @@ func (ts *TimerState) SetPredefinedSplits(splits []SplitDefinition, title string
 
 // NextSplit advances to the next predefined split
 func (ts *TimerState) NextSplit() {
-	if ts.Status != "running" || ts.CurrentSplitIndex >= len(ts.PredefinedSplits)-1 {
+	if ts.Status != "running" || ts.CurrentSplitIndex < 0 || ts.CurrentSplitIndex >= len(ts.PredefinedSplits) {
 		return
 	}
-	ts.CurrentSplitIndex++
+
+	// Calculate times for the current split being completed
 	segmentTime := time.Since(ts.StartTime)
 	if len(ts.Splits) > 0 {
 		segmentTime -= ts.Splits[len(ts.Splits)-1].CumulativeTime
@@ -141,6 +146,7 @@ func (ts *TimerState) NextSplit() {
 		}
 	}
 
+	// Save the completed split
 	ts.Splits = append(ts.Splits, Split{
 		Name:           ts.PredefinedSplits[ts.CurrentSplitIndex].Name,
 		SegmentTime:    segmentTime,
@@ -148,7 +154,7 @@ func (ts *TimerState) NextSplit() {
 		Delta:          delta,
 	})
 
-	// If this was the last split, check if we have a new personal best
+	// If this was the last split, stop the timer and check for new PB
 	if ts.CurrentSplitIndex == len(ts.PredefinedSplits)-1 {
 		ts.Status = "stopped"
 		if ts.PersonalBest == 0 || ts.CurrentTime < ts.PersonalBest {
@@ -159,6 +165,11 @@ func (ts *TimerState) NextSplit() {
 				ts.PBSplitTimes[i] = split.CumulativeTime
 			}
 		}
+		// Set index to -1 to indicate run is complete
+		ts.CurrentSplitIndex = -1
+	} else {
+		// Move to the next split
+		ts.CurrentSplitIndex++
 	}
 }
 
