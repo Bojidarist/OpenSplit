@@ -203,22 +203,34 @@ function updateTimer(state) {
     // Determine if run is completed (stopped with all splits completed)
     const runCompleted = state.status === 'stopped' && state.currentSplitIndex === -1 && state.splits && state.splits.length > 0;
     
+    // Determine if at starting position (stopped with no splits recorded)
+    const atStartingPosition = state.status === 'stopped' && (!state.splits || state.splits.length === 0);
+    
     // Show/hide buttons based on status
     const startBtn = document.getElementById('start-btn');
     const pauseBtn = document.getElementById('pause-btn');
+    const resetBtn = document.getElementById('reset-btn');
     
     if (runCompleted) {
         // Run is complete - only show reset button
         startBtn.style.display = 'none';
         pauseBtn.style.display = 'none';
-    } else if (state.status === 'stopped') {
-        // Stopped/reset - show start button, hide pause
+        resetBtn.style.display = 'inline-block';
+    } else if (atStartingPosition) {
+        // At starting position - only show start button
         startBtn.style.display = 'inline-block';
         pauseBtn.style.display = 'none';
+        resetBtn.style.display = 'none';
+    } else if (state.status === 'stopped') {
+        // Stopped but has some splits (partial run) - show start and reset
+        startBtn.style.display = 'inline-block';
+        pauseBtn.style.display = 'none';
+        resetBtn.style.display = 'inline-block';
     } else {
-        // Running or paused - hide start, show pause
+        // Running or paused - hide start, show pause and reset
         startBtn.style.display = 'none';
         pauseBtn.style.display = 'inline-block';
+        resetBtn.style.display = 'inline-block';
     }
 
     updateSplits(state);
