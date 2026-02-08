@@ -7,7 +7,7 @@ This document provides guidelines for agentic coding assistants working on the O
 ### Building and Running
 ```bash
 # Build the application
-go build
+go build -o ./build/opensplit
 
 # Run the application locally (starts server on :8080)
 go run .

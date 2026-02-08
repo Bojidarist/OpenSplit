@@ -95,6 +95,8 @@ func (h *Hub) Run() {
 				}
 			case "nextSplit":
 				h.timer.NextSplit()
+			case "restorePBData":
+				h.timer.RestorePBData(cmd)
 			}
 
 			// Broadcast updated state to all clients

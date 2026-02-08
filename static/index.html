@@ -20,19 +20,31 @@
         <div class="top-section">
             <h1 id="game-title">OpenSplit</h1>
             <div id="current-split-display" class="current-split">No splits defined</div>
+            <div class="splits-header">
+                <div class="header-icon"></div>
+                <div class="header-name">Split</div>
+                <div class="header-delta">+/-</div>
+                <div class="header-time">Time</div>
+                <div class="header-pb">PB</div>
+            </div>
             <div class="splits-container">
                 <div id="splits-body" class="splits-list">
                 </div>
             </div>
-            <div class="splits-header">
-                <div>Split Name</div>
-                <div>Segment Time</div>
-                <div>Cumulative Time</div>
-            </div>
         </div>
         <div class="bottom-section">
             <div id="timer-display" class="timer">0:00.00</div>
-            <div id="previous-segment" class="previous-segment">Previous Segment</div>
+            <div id="previous-segment" class="previous-segment">Previous Segment: --</div>
+            <div class="stats-container">
+                <div class="stat-item">
+                    <span class="stat-label">Personal Best:</span>
+                    <span id="pb-time" class="stat-value">--</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Sum of Best:</span>
+                    <span id="sob-time" class="stat-value">--</span>
+                </div>
+            </div>
             <div class="buttons">
                 <button id="start-btn">Start</button>
                 <button id="pause-btn">Pause</button>

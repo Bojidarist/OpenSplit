@@ -8,6 +8,7 @@ let currentIconPreview = '🏃';
 let containerWidth = parseInt(localStorage.getItem('containerWidth')) || 600;
 const MIN_CONTAINER_WIDTH = 400;
 const MAX_CONTAINER_WIDTH = 600;
+let currentTimerState = null; // Store the latest timer state for export
 
 function applyTheme() {
     // Remove both classes first
@@ -127,6 +128,9 @@ function sendCommand(command, extra = {}) {
 }
 
 function updateTimer(state) {
+    // Store the current state for export
+    currentTimerState = state;
+    
     const time = formatTime(state.currentTime);
     const display = document.getElementById('timer-display');
     display.textContent = time;
@@ -176,11 +180,27 @@ function updateTimer(state) {
         prevSegmentDisplay.textContent = 'Previous Segment: --';
     }
 
+    // Update PB and Sum of Best displays
+    const pbDisplay = document.getElementById('pb-time');
+    const sobDisplay = document.getElementById('sob-time');
+    
+    if (state.personalBest && state.personalBest > 0) {
+        pbDisplay.textContent = formatTime(state.personalBest);
+    } else {
+        pbDisplay.textContent = '--';
+    }
+    
+    if (state.sumOfBest && state.sumOfBest > 0) {
+        sobDisplay.textContent = formatTime(state.sumOfBest);
+    } else {
+        sobDisplay.textContent = '--';
+    }
+
     // Show/hide next split button
     const nextBtn = document.getElementById('next-split-btn');
     nextBtn.style.display = (state.status === 'running' && predefinedSplits.length > 0) ? 'inline-block' : 'none';
 
-    updateSplits(state.splits, state.predefinedSplits, state.currentSplitIndex);
+    updateSplits(state);
 
     // Auto-scroll to keep current split visible
     const container = document.querySelector('.splits-container');
@@ -208,14 +228,23 @@ function formatTime(durationMs) {
     }
 }
 
-function updateSplits(splits, predefinedSplits, currentSplitIndex) {
+function updateSplits(state) {
     const list = document.getElementById('splits-body');
     list.innerHTML = '';
+    const splits = state.splits || [];
+    const predefinedSplits = state.predefinedSplits || [];
+    const currentSplitIndex = state.currentSplitIndex;
+    const pbSplitTimes = state.pbSplitTimes || [];
+    
     if (predefinedSplits && predefinedSplits.length > 0) {
         predefinedSplits.forEach((splitDef, index) => {
             const row = document.createElement('div');
             row.className = 'split-row';
-            if (index === currentSplitIndex) {
+            
+            // Add highlighting classes
+            if (index < currentSplitIndex) {
+                row.classList.add('completed');
+            } else if (index === currentSplitIndex) {
                 row.classList.add('current');
             }
             
@@ -250,6 +279,26 @@ function updateSplits(splits, predefinedSplits, currentSplitIndex) {
             nameDiv.className = 'split-name';
             nameDiv.textContent = name;
             
+            // Delta (left of cumulative time)
+            const deltaDiv = document.createElement('div');
+            deltaDiv.className = 'split-delta';
+            if (index < splits.length && splits[index].delta !== undefined) {
+                const delta = splits[index].delta;
+                if (delta !== 0) {
+                    const deltaStr = formatDelta(delta);
+                    deltaDiv.textContent = deltaStr;
+                    if (delta < 0) {
+                        deltaDiv.classList.add('ahead');
+                    } else {
+                        deltaDiv.classList.add('behind');
+                    }
+                } else {
+                    deltaDiv.textContent = '--';
+                }
+            } else {
+                deltaDiv.textContent = '--';
+            }
+            
             // Cumulative time (right-aligned)
             const cumulativeDiv = document.createElement('div');
             cumulativeDiv.className = 'split-time';
@@ -262,14 +311,25 @@ function updateSplits(splits, predefinedSplits, currentSplitIndex) {
                 cumulativeDiv.textContent = '--';
             }
             
+            // PB time (far right)
+            const pbDiv = document.createElement('div');
+            pbDiv.className = 'split-pb-time';
+            if (index < pbSplitTimes.length && pbSplitTimes[index] > 0) {
+                pbDiv.textContent = formatTime(pbSplitTimes[index]);
+            } else {
+                pbDiv.textContent = '--';
+            }
+            
             row.appendChild(iconSpan);
             row.appendChild(nameDiv);
+            row.appendChild(deltaDiv);
             row.appendChild(cumulativeDiv);
+            row.appendChild(pbDiv);
             list.appendChild(row);
         });
     } else {
         // Fallback, but since we have predefined, perhaps not needed
-        splits.forEach(split => {
+        splits.forEach((split, index) => {
             const row = document.createElement('div');
             row.className = 'split-row';
             
@@ -281,15 +341,55 @@ function updateSplits(splits, predefinedSplits, currentSplitIndex) {
             nameDiv.className = 'split-name';
             nameDiv.textContent = split.name;
             
+            const deltaDiv = document.createElement('div');
+            deltaDiv.className = 'split-delta';
+            if (split.delta !== undefined && split.delta !== 0) {
+                const deltaStr = formatDelta(split.delta);
+                deltaDiv.textContent = deltaStr;
+                if (split.delta < 0) {
+                    deltaDiv.classList.add('ahead');
+                } else {
+                    deltaDiv.classList.add('behind');
+                }
+            } else {
+                deltaDiv.textContent = '--';
+            }
+            
             const cumulativeDiv = document.createElement('div');
             cumulativeDiv.className = 'split-time';
             cumulativeDiv.textContent = formatTime(split.cumulativeTime);
             
+            const pbDiv = document.createElement('div');
+            pbDiv.className = 'split-pb-time';
+            if (index < pbSplitTimes.length && pbSplitTimes[index] > 0) {
+                pbDiv.textContent = formatTime(pbSplitTimes[index]);
+            } else {
+                pbDiv.textContent = '--';
+            }
+            
             row.appendChild(iconSpan);
             row.appendChild(nameDiv);
+            row.appendChild(deltaDiv);
             row.appendChild(cumulativeDiv);
+            row.appendChild(pbDiv);
             list.appendChild(row);
         });
+    }
+}
+
+// Format delta with + or - sign
+function formatDelta(durationMs) {
+    const sign = durationMs >= 0 ? '+' : '-';
+    const absDuration = Math.abs(durationMs);
+    const totalSeconds = Math.floor(absDuration / 1000000000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const milliseconds = Math.floor((absDuration % 1000000000) / 1000000);
+    
+    if (minutes > 0) {
+        return `${sign}${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0').substring(0, 2)}`;
+    } else {
+        return `${sign}${seconds}.${milliseconds.toString().padStart(3, '0').substring(0, 2)}`;
     }
 }
 
@@ -464,7 +564,13 @@ document.getElementById('export-splits-btn').onclick = () => {
     const exportData = {
         title: timerTitle,
         splits: predefinedSplits,
-        containerWidth: containerWidth
+        containerWidth: containerWidth,
+        // Export PB data if available
+        bestSplitTimes: currentTimerState?.bestSplitTimes || [],
+        bestCumulativeTimes: currentTimerState?.bestCumulativeTimes || [],
+        personalBest: currentTimerState?.personalBest || 0,
+        sumOfBest: currentTimerState?.sumOfBest || 0,
+        pbSplitTimes: currentTimerState?.pbSplitTimes || []
     };
     const dataStr = JSON.stringify(exportData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
@@ -526,7 +632,20 @@ document.getElementById('import-splits-file').onchange = (event) => {
                     return;
                 }
                 
+                // Send splits first
                 sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
+                
+                // If PB data exists, send it separately
+                if (imported.bestSplitTimes || imported.personalBest || imported.pbSplitTimes) {
+                    sendCommand('restorePBData', {
+                        bestSplitTimes: imported.bestSplitTimes || [],
+                        bestCumulativeTimes: imported.bestCumulativeTimes || [],
+                        personalBest: imported.personalBest || 0,
+                        sumOfBest: imported.sumOfBest || 0,
+                        pbSplitTimes: imported.pbSplitTimes || []
+                    });
+                }
+                
                 document.getElementById('timer-title').value = timerTitle;
                 document.getElementById('import-splits-file').value = '';
             } catch (err) {

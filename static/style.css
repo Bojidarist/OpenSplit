@@ -24,6 +24,10 @@
     --close-hover: #fff;
     --current-split-bg: #2a3540;
     --split-hover-bg: #222222;
+    --completed-split-bg: #1a1a1a;
+    --completed-split-text: #888888;
+    --delta-ahead: #00ff88;
+    --delta-behind: #ff4444;
 }
 
 body.light {
@@ -52,6 +56,10 @@ body.light {
     --close-hover: black;
     --current-split-bg: #d0e8ff;
     --split-hover-bg: #f5f5f5;
+    --completed-split-bg: #f5f5f5;
+    --completed-split-text: #aaaaaa;
+    --delta-ahead: #00aa55;
+    --delta-behind: #cc0000;
 }
 
 /* Keep dark class for backward compatibility */
@@ -81,6 +89,10 @@ body.dark {
     --close-hover: #fff;
     --current-split-bg: #2a3540;
     --split-hover-bg: #222222;
+    --completed-split-bg: #1a1a1a;
+    --completed-split-text: #888888;
+    --delta-ahead: #00ff88;
+    --delta-behind: #ff4444;
 }
 
 body {
@@ -259,6 +271,34 @@ h2 {
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
+.stats-container {
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 12px;
+    background-color: var(--splits-header-bg);
+    border-top: 1px solid var(--split-border);
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.stat-label {
+    font-size: 0.75em;
+    color: var(--text-color);
+    opacity: 0.7;
+    margin-bottom: 2px;
+}
+
+.stat-value {
+    font-size: 0.9em;
+    color: var(--text-color);
+    font-weight: bold;
+}
+
 @media (max-width: 480px) {
     .previous-segment {
         font-size: 0.85em;
@@ -368,7 +408,46 @@ input {
 }
 
 .splits-header {
-    display: none;
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    background-color: var(--splits-header-bg);
+    border-bottom: 1px solid var(--split-border);
+    font-size: 0.75em;
+    font-weight: bold;
+    color: var(--text-color);
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.splits-header .header-icon {
+    width: 24px;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.splits-header .header-name {
+    flex: 1;
+    text-align: left;
+}
+
+.splits-header .header-delta {
+    text-align: right;
+    min-width: 70px;
+    margin-left: 8px;
+}
+
+.splits-header .header-time {
+    text-align: right;
+    min-width: 90px;
+    margin-left: 12px;
+}
+
+.splits-header .header-pb {
+    text-align: right;
+    min-width: 90px;
+    margin-left: 8px;
 }
 
 .splits-container {
@@ -416,6 +495,17 @@ input {
     background-color: var(--current-split-bg);
 }
 
+.split-row.completed {
+    background-color: var(--completed-split-bg);
+    color: var(--completed-split-text);
+}
+
+.split-row.completed .split-name,
+.split-row.completed .split-time,
+.split-row.completed .split-delta {
+    color: var(--completed-split-text);
+}
+
 .split-row > div {
     text-align: left;
     color: var(--text-color);
@@ -453,7 +543,53 @@ input {
     margin-left: 12px;
 }
 
+.split-row .split-delta {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    text-align: right;
+    min-width: 70px;
+    margin-left: 8px;
+    font-size: 0.9em;
+}
+
+.split-row .split-delta.ahead {
+    color: var(--delta-ahead);
+}
+
+.split-row .split-delta.behind {
+    color: var(--delta-behind);
+}
+
+.split-row .split-pb-time {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    text-align: right;
+    min-width: 90px;
+    margin-left: 8px;
+    color: var(--text-color);
+    opacity: 0.8;
+    font-size: 0.95em;
+}
+
 @media (max-width: 480px) {
+    .splits-header {
+        padding: 4px 10px;
+        font-size: 0.65em;
+    }
+    
+    .splits-header .header-icon {
+        width: 20px;
+        margin-right: 8px;
+    }
+    
+    .splits-header .header-delta {
+        min-width: 60px;
+    }
+    
+    .splits-header .header-time,
+    .splits-header .header-pb {
+        min-width: 75px;
+        margin-left: 8px;
+    }
+    
     .split-row {
         padding: 8px 10px;
     }
@@ -471,6 +607,12 @@ input {
     .split-row .split-time {
         min-width: 75px;
         margin-left: 8px;
+    }
+    
+    .split-row .split-pb-time {
+        min-width: 75px;
+        margin-left: 8px;
+        font-size: 0.85em;
     }
 }
 
