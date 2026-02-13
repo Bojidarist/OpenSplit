@@ -34,3 +34,4 @@ go.work.sum
 server.log
 
 build/
+AGENT_TASKS.md
