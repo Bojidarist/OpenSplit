@@ -20,6 +20,10 @@
         <div class="top-section">
             <h1 id="game-title">OpenSplit</h1>
             <div id="current-split-display" class="current-split">No splits defined</div>
+            <div id="split-notes-display">
+                <span class="notes-icon">📝</span>
+                <span class="notes-text"></span>
+            </div>
             <div class="splits-header">
                 <div class="header-icon"></div>
                 <div class="header-name">Split</div>
@@ -111,6 +115,11 @@
             <div class="icon-upload-container">
                 <input type="file" id="edit-split-icon" accept="image/*">
                 <span class="icon-preview" id="edit-icon-preview">🏃</span>
+            </div>
+            <label for="edit-split-notes">Split Notes (optional):</label>
+            <textarea id="edit-split-notes" placeholder="Add notes or reminders for this split (e.g., strategies, route details, things to remember)" maxlength="500" rows="4"></textarea>
+            <div class="character-count">
+                <span id="notes-char-count">0</span>/500 characters
             </div>
             <div class="modal-buttons">
                 <button id="save-edit-btn">Save Changes</button>

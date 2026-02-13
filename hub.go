@@ -75,15 +75,20 @@ func (h *Hub) Run() {
 						if splitMap, ok := s.(map[string]interface{}); ok {
 							name := ""
 							icon := "🏃"
+							notes := ""
 							if n, ok := splitMap["name"].(string); ok {
 								name = n
 							}
 							if i, ok := splitMap["icon"].(string); ok {
 								icon = i
 							}
+							if nt, ok := splitMap["notes"].(string); ok {
+								notes = nt
+							}
 							splitDefs = append(splitDefs, SplitDefinition{
-								Name: name,
-								Icon: icon,
+								Name:  name,
+								Icon:  icon,
+								Notes: notes,
 							})
 						}
 					}

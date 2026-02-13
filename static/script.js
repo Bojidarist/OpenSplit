@@ -7,6 +7,7 @@ let timerTitle = 'OpenSplit';
 let currentIconPreview = '🏃';
 let editingIconPreview = '🏃'; // Track icon during edit
 let editingSplitIndex = -1; // Track which split is being edited
+let editingNotes = ''; // Track notes during edit
 let containerWidth = parseInt(localStorage.getItem('containerWidth')) || 600;
 const MIN_CONTAINER_WIDTH = 400;
 const MAX_CONTAINER_WIDTH = 600;
@@ -144,15 +145,16 @@ function updateTimer(state) {
         predefinedSplits = state.predefinedSplits.map(split => {
             if (typeof split === 'string') {
                 // Old format compatibility
-                return { name: split, icon: '🏃' };
+                return { name: split, icon: '🏃', notes: '' };
             } else if (split && typeof split === 'object') {
                 // New format
                 return { 
                     name: split.name || 'Unnamed', 
-                    icon: split.icon || '🏃' 
+                    icon: split.icon || '🏃',
+                    notes: split.notes || ''
                 };
             }
-            return { name: 'Unnamed', icon: '🏃' };
+            return { name: 'Unnamed', icon: '🏃', notes: '' };
         });
     } else {
         predefinedSplits = [];
@@ -164,12 +166,28 @@ function updateTimer(state) {
 
     // Update current split display
     const splitDisplay = document.getElementById('current-split-display');
+    const notesDisplay = document.getElementById('split-notes-display');
+    const notesText = notesDisplay.querySelector('.notes-text');
+
     if (predefinedSplits.length > 0 && state.currentSplitIndex >= 0 && state.currentSplitIndex < predefinedSplits.length) {
         splitDisplay.textContent = `${predefinedSplits[state.currentSplitIndex].name}`;
-    } else if (predefinedSplits.length > 0) {
-        splitDisplay.textContent = 'Ready to start';
+        
+        // Show notes if current split has them
+        const currentSplit = predefinedSplits[state.currentSplitIndex];
+        if (currentSplit.notes && currentSplit.notes.trim()) {
+            notesText.textContent = currentSplit.notes;
+            notesDisplay.classList.add('show');
+        } else {
+            notesDisplay.classList.remove('show');
+        }
     } else {
-        splitDisplay.textContent = 'No splits defined';
+        if (predefinedSplits.length > 0) {
+            splitDisplay.textContent = 'Ready to start';
+        } else {
+            splitDisplay.textContent = 'No splits defined';
+        }
+        // Hide notes when not in a run
+        notesDisplay.classList.remove('show');
     }
 
     // Update previous segment display
@@ -630,6 +648,15 @@ function updatePredefinedList() {
         const textSpan = document.createElement('span');
         textSpan.textContent = `${index + 1}. ${splitDef.name}`;
         
+        // Add notes indicator if split has notes
+        if (splitDef.notes && splitDef.notes.trim()) {
+            const noteIndicator = document.createElement('span');
+            noteIndicator.className = 'split-item-note-indicator';
+            noteIndicator.textContent = '📝';
+            noteIndicator.title = 'This split has notes';
+            textSpan.appendChild(noteIndicator);
+        }
+        
         content.appendChild(iconDiv);
         content.appendChild(textSpan);
         
@@ -681,6 +708,11 @@ function openEditModal(index) {
     // Pre-fill form with current data
     document.getElementById('edit-split-name').value = split.name;
     editingIconPreview = split.icon;
+    editingNotes = split.notes || '';
+    
+    // Pre-fill notes
+    document.getElementById('edit-split-notes').value = editingNotes;
+    updateCharacterCount();
     
     // Update icon preview
     const preview = document.getElementById('edit-icon-preview');
@@ -702,6 +734,7 @@ function closeEditModal() {
     document.getElementById('edit-split-modal').style.display = 'none';
     editingSplitIndex = -1;
     editingIconPreview = '🏃';
+    editingNotes = '';
 }
 
 // Save edited split
@@ -714,10 +747,13 @@ function saveEditedSplit() {
         return;
     }
     
+    const notes = document.getElementById('edit-split-notes').value;
+    
     // Update split in array
     predefinedSplits[editingSplitIndex] = {
         name: name,
-        icon: editingIconPreview
+        icon: editingIconPreview,
+        notes: notes
     };
     
     // Send to server
@@ -727,12 +763,22 @@ function saveEditedSplit() {
     closeEditModal();
 }
 
+// Update character count for notes textarea
+function updateCharacterCount() {
+    const textarea = document.getElementById('edit-split-notes');
+    const counter = document.getElementById('notes-char-count');
+    if (textarea && counter) {
+        counter.textContent = textarea.value.length;
+    }
+}
+
 document.getElementById('add-predefined-btn').onclick = () => {
     const name = document.getElementById('predefined-name').value.trim();
     if (name) {
         predefinedSplits.push({
             name: name,
-            icon: currentIconPreview
+            icon: currentIconPreview,
+            notes: '' // New splits start with empty notes
         });
         const title = document.getElementById('timer-title').value.trim();
         timerTitle = title || 'OpenSplit';
@@ -901,6 +947,12 @@ window.addEventListener('click', (event) => {
     }
 });
 
+// Notes textarea character counter
+document.getElementById('edit-split-notes').addEventListener('input', () => {
+    updateCharacterCount();
+    editingNotes = document.getElementById('edit-split-notes').value;
+});
+
 document.getElementById('export-splits-btn').onclick = () => {
     const exportData = {
         title: timerTitle,
@@ -950,7 +1002,8 @@ document.getElementById('import-splits-file').onchange = (event) => {
                     // Old format: array of strings
                     predefinedSplits = imported.map(name => ({
                         name: typeof name === 'string' ? name : name.name || '',
-                        icon: typeof name === 'object' ? (name.icon || '🏃') : '🏃'
+                        icon: typeof name === 'object' ? (name.icon || '🏃') : '🏃',
+                        notes: typeof name === 'object' ? (name.notes || '') : ''
                     }));
                     timerTitle = 'OpenSplit';
                  } else if (imported.splits && Array.isArray(imported.splits)) {
@@ -958,7 +1011,8 @@ document.getElementById('import-splits-file').onchange = (event) => {
                      timerTitle = imported.title || 'OpenSplit';
                      predefinedSplits = imported.splits.map(split => ({
                          name: split.name || '',
-                         icon: split.icon || '🏃'
+                         icon: split.icon || '🏃',
+                         notes: split.notes || '' // Add empty notes if not present
                      }));
                      if (imported.containerWidth) {
                          containerWidth = imported.containerWidth;

@@ -7,8 +7,9 @@ import (
 
 // SplitDefinition represents a predefined split with name and icon
 type SplitDefinition struct {
-	Name string `json:"name"`
-	Icon string `json:"icon"` // base64 encoded image or emoji
+	Name  string `json:"name"`
+	Icon  string `json:"icon"`  // base64 encoded image or emoji
+	Notes string `json:"notes"` // optional notes for the split
 }
 
 // Split represents a single split with name, segment time, cumulative time, and delta
