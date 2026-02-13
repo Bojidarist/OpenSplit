@@ -802,3 +802,44 @@ input {
 .split-item:not(.dragging):hover {
     background-color: var(--split-hover-bg);
 }
+
+/* Edit button styling */
+.split-item-actions button.edit-btn {
+    background-color: #007bff;
+    color: white;
+    padding: 5px 10px;
+    font-size: 0.8em;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.split-item-actions button.edit-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Edit modal specific styles */
+#edit-split-modal .modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+#save-edit-btn {
+    background-color: #28a745;
+    flex: 1;
+}
+
+#save-edit-btn:hover {
+    background-color: #218838;
+}
+
+#cancel-edit-btn {
+    background-color: #6c757d;
+    flex: 1;
+}
+
+#cancel-edit-btn:hover {
+    background-color: #5a6268;
+}

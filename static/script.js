@@ -5,6 +5,8 @@ let theme = localStorage.getItem('theme') || 'dark'; // Default to dark mode
 let predefinedSplits = [];
 let timerTitle = 'OpenSplit';
 let currentIconPreview = '🏃';
+let editingIconPreview = '🏃'; // Track icon during edit
+let editingSplitIndex = -1; // Track which split is being edited
 let containerWidth = parseInt(localStorage.getItem('containerWidth')) || 600;
 const MIN_CONTAINER_WIDTH = 400;
 const MAX_CONTAINER_WIDTH = 600;
@@ -634,6 +636,16 @@ function updatePredefinedList() {
         const actions = document.createElement('div');
         actions.className = 'split-item-actions';
         
+        // Edit button
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.className = 'edit-btn';
+        editBtn.onclick = (e) => {
+            e.stopPropagation(); // Prevent drag events
+            openEditModal(index);
+        };
+        
+        // Delete button
         const removeBtn = document.createElement('button');
         removeBtn.textContent = 'Delete';
         removeBtn.style.backgroundColor = '#dc3545';
@@ -653,11 +665,66 @@ function updatePredefinedList() {
         item.addEventListener('dragend', handleDragEnd);
         item.addEventListener('dragleave', handleDragLeave);
         
+        actions.appendChild(editBtn);
         actions.appendChild(removeBtn);
         item.appendChild(content);
         item.appendChild(actions);
         list.appendChild(item);
     });
+}
+
+// Open edit modal with split data
+function openEditModal(index) {
+    editingSplitIndex = index;
+    const split = predefinedSplits[index];
+    
+    // Pre-fill form with current data
+    document.getElementById('edit-split-name').value = split.name;
+    editingIconPreview = split.icon;
+    
+    // Update icon preview
+    const preview = document.getElementById('edit-icon-preview');
+    if (split.icon && split.icon.startsWith('data:image')) {
+        preview.innerHTML = `<img src="${split.icon}" alt="icon" style="width: 100%; height: 100%; object-fit: contain;">`;
+    } else {
+        preview.textContent = split.icon || '🏃';
+    }
+    
+    // Clear file input
+    document.getElementById('edit-split-icon').value = '';
+    
+    // Show modal
+    document.getElementById('edit-split-modal').style.display = 'block';
+}
+
+// Close edit modal
+function closeEditModal() {
+    document.getElementById('edit-split-modal').style.display = 'none';
+    editingSplitIndex = -1;
+    editingIconPreview = '🏃';
+}
+
+// Save edited split
+function saveEditedSplit() {
+    if (editingSplitIndex === -1) return;
+    
+    const name = document.getElementById('edit-split-name').value.trim();
+    if (!name) {
+        alert('Split name cannot be empty');
+        return;
+    }
+    
+    // Update split in array
+    predefinedSplits[editingSplitIndex] = {
+        name: name,
+        icon: editingIconPreview
+    };
+    
+    // Send to server
+    sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
+    
+    // Close modal
+    closeEditModal();
 }
 
 document.getElementById('add-predefined-btn').onclick = () => {
@@ -796,6 +863,43 @@ document.getElementById('split-icon').onchange = (event) => {
         reader.readAsDataURL(file);
     }
 };
+
+// Edit split icon change handler
+document.getElementById('edit-split-icon').onchange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            editingIconPreview = e.target.result;
+            const preview = document.getElementById('edit-icon-preview');
+            preview.innerHTML = `<img src="${e.target.result}" alt="icon" style="width: 100%; height: 100%; object-fit: contain;">`;
+        };
+        reader.readAsDataURL(file);
+    }
+};
+
+// Save edit button
+document.getElementById('save-edit-btn').onclick = () => {
+    saveEditedSplit();
+};
+
+// Cancel edit button
+document.getElementById('cancel-edit-btn').onclick = () => {
+    closeEditModal();
+};
+
+// Close button (×) for edit modal
+document.querySelector('.edit-split-close').onclick = () => {
+    closeEditModal();
+};
+
+// Close edit modal when clicking outside
+window.addEventListener('click', (event) => {
+    const editModal = document.getElementById('edit-split-modal');
+    if (event.target === editModal) {
+        closeEditModal();
+    }
+});
 
 document.getElementById('export-splits-btn').onclick = () => {
     const exportData = {
