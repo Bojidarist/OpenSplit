@@ -778,3 +778,27 @@ input {
     display: flex;
     gap: 5px;
 }
+
+/* Drag and drop styles */
+.split-item[draggable="true"] {
+    cursor: move;
+    user-select: none;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.split-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+}
+
+.split-item.drag-over {
+    border-top: 3px solid var(--timer-color);
+}
+
+.split-item.drag-over-bottom {
+    border-bottom: 3px solid var(--timer-color);
+}
+
+.split-item:not(.dragging):hover {
+    background-color: var(--split-hover-bg);
+}

@@ -505,6 +505,101 @@ window.onclick = (event) => {
     }
 };
 
+// Drag and drop variables
+let draggedItem = null;
+let draggedIndex = null;
+
+// Drag event handlers
+function handleDragStart(e) {
+    draggedItem = this;
+    draggedIndex = parseInt(this.dataset.index);
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    
+    const targetItem = e.target.closest('.split-item');
+    if (targetItem && targetItem !== draggedItem) {
+        // Remove all drag-over classes first
+        document.querySelectorAll('.split-item').forEach(item => {
+            item.classList.remove('drag-over', 'drag-over-bottom');
+        });
+        
+        // Determine if we should place above or below
+        const rect = targetItem.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+        
+        if (e.clientY < midpoint) {
+            targetItem.classList.add('drag-over');
+        } else {
+            targetItem.classList.add('drag-over-bottom');
+        }
+    }
+    
+    return false;
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+    
+    const targetItem = e.target.closest('.split-item');
+    if (targetItem && targetItem !== draggedItem) {
+        const targetIndex = parseInt(targetItem.dataset.index);
+        
+        // Determine drop position
+        const rect = targetItem.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+        let dropIndex = targetIndex;
+        
+        if (e.clientY >= midpoint) {
+            dropIndex = targetIndex + 1;
+        }
+        
+        // Reorder the array
+        const draggedSplit = predefinedSplits[draggedIndex];
+        predefinedSplits.splice(draggedIndex, 1);
+        
+        // Adjust drop index if dragging from earlier position
+        if (draggedIndex < dropIndex) {
+            dropIndex--;
+        }
+        
+        predefinedSplits.splice(dropIndex, 0, draggedSplit);
+        
+        // Sync with server and update UI
+        sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
+    }
+    
+    return false;
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    
+    // Remove all drag-over classes
+    document.querySelectorAll('.split-item').forEach(item => {
+        item.classList.remove('drag-over', 'drag-over-bottom');
+    });
+    
+    draggedItem = null;
+    draggedIndex = null;
+}
+
+function handleDragLeave(e) {
+    const targetItem = e.target.closest('.split-item');
+    if (targetItem) {
+        targetItem.classList.remove('drag-over', 'drag-over-bottom');
+    }
+}
+
 // Update predefined list display
 function updatePredefinedList() {
     const list = document.getElementById('predefined-list');
@@ -512,6 +607,8 @@ function updatePredefinedList() {
     predefinedSplits.forEach((splitDef, index) => {
         const item = document.createElement('div');
         item.className = 'split-item';
+        item.draggable = true;
+        item.dataset.index = index;
         
         const content = document.createElement('div');
         content.className = 'split-item-content';
@@ -543,10 +640,18 @@ function updatePredefinedList() {
         removeBtn.style.color = 'white';
         removeBtn.style.padding = '5px 10px';
         removeBtn.style.fontSize = '0.8em';
-        removeBtn.onclick = () => {
+        removeBtn.onclick = (e) => {
+            e.stopPropagation(); // Prevent drag events
             predefinedSplits.splice(index, 1);
             sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
         };
+        
+        // Drag event handlers
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('drop', handleDrop);
+        item.addEventListener('dragend', handleDragEnd);
+        item.addEventListener('dragleave', handleDragLeave);
         
         actions.appendChild(removeBtn);
         item.appendChild(content);
