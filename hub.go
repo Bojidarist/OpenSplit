@@ -97,6 +97,10 @@ func (h *Hub) Run() {
 				h.timer.NextSplit()
 			case "restorePBData":
 				h.timer.RestorePBData(cmd)
+			case "setWorldRecord":
+				if worldRecord, ok := cmd["worldRecord"].(float64); ok {
+					h.timer.WorldRecord = time.Duration(worldRecord)
+				}
 			}
 
 			// Broadcast updated state to all clients

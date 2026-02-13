@@ -183,6 +183,7 @@ function updateTimer(state) {
     // Update PB and Sum of Best displays
     const pbDisplay = document.getElementById('pb-time');
     const sobDisplay = document.getElementById('sob-time');
+    const wrDisplay = document.getElementById('wr-time');
     
     if (state.personalBest && state.personalBest > 0) {
         pbDisplay.textContent = formatTime(state.personalBest);
@@ -194,6 +195,13 @@ function updateTimer(state) {
         sobDisplay.textContent = formatTime(state.sumOfBest);
     } else {
         sobDisplay.textContent = '--';
+    }
+    
+    // Display world record (always show, use -- if not set)
+    if (state.worldRecord && state.worldRecord > 0) {
+        wrDisplay.textContent = formatTime(state.worldRecord);
+    } else {
+        wrDisplay.textContent = '--';
     }
 
     // Show/hide next split button
@@ -473,6 +481,14 @@ splitsBtn.onclick = () => {
     updatePredefinedList();
     document.getElementById('timer-title').value = timerTitle;
     document.getElementById('container-width').value = containerWidth;
+    
+    // Populate world record field if available
+    if (currentTimerState?.worldRecord && currentTimerState.worldRecord > 0) {
+        document.getElementById('world-record').value = formatTimeForInput(currentTimerState.worldRecord);
+    } else {
+        document.getElementById('world-record').value = '';
+    }
+    
     splitsModal.style.display = 'block';
 };
 
@@ -577,6 +593,85 @@ document.getElementById('save-width-btn').onclick = () => {
     }
 };
 
+// Parse time input matching timer format (H:MM:SS or M:SS.CS where CS is centiseconds)
+function parseTimeInput(input) {
+    if (!input || input.trim() === '') return 0;
+    
+    const trimmed = input.trim();
+    
+    // Regex to match timer format: optional hours, minutes, seconds, and optional centiseconds
+    // Formats: "1:23:45", "23:45", "1:23:45.12", "23:45.12"
+    // Timer shows: H:MM:SS (if hours > 0) or M:SS.CS (if hours = 0)
+    const timeRegex = /^(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d{2}))?$/;
+    const match = trimmed.match(timeRegex);
+    
+    if (!match) {
+        return null; // Invalid format
+    }
+    
+    let hours = 0, minutes = 0, seconds = 0, centiseconds = 0;
+    
+    if (match[1] !== undefined) {
+        // Format: H:MM:SS or H:MM:SS.CS
+        hours = parseInt(match[1]) || 0;
+        minutes = parseInt(match[2]) || 0;
+        seconds = parseInt(match[3]) || 0;
+        centiseconds = match[4] ? parseInt(match[4]) || 0 : 0;
+    } else {
+        // Format: M:SS or M:SS.CS
+        minutes = parseInt(match[2]) || 0;
+        seconds = parseInt(match[3]) || 0;
+        centiseconds = match[4] ? parseInt(match[4]) || 0 : 0;
+    }
+    
+    // Validate ranges
+    if (minutes >= 60 || seconds >= 60 || centiseconds >= 100) {
+        return null; // Invalid time values
+    }
+    
+    // Convert to nanoseconds (Go time.Duration format)
+    const totalMs = (hours * 3600 + minutes * 60 + seconds) * 1000 + centiseconds * 10;
+    return totalMs * 1000000; // Convert milliseconds to nanoseconds
+}
+
+// Format nanoseconds to timer input format string
+function formatTimeForInput(durationMs) {
+    if (!durationMs || durationMs === 0) return '';
+    
+    const totalSeconds = Math.floor(durationMs / 1000000000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const centiseconds = Math.floor((durationMs % 1000000000) / 10000000);
+    
+    // Format like the timer: show hours only if > 0
+    if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
+    } else {
+        return `${minutes}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
+    }
+}
+
+// Save world record button
+document.getElementById('save-wr-btn').onclick = () => {
+    const wrInput = document.getElementById('world-record').value.trim();
+    
+    if (wrInput === '') {
+        // Clear world record if input is empty
+        sendCommand('setWorldRecord', { worldRecord: 0 });
+    } else {
+        const wrDuration = parseTimeInput(wrInput);
+        
+        if (wrDuration === null) {
+            alert('Invalid time format.\n\nPlease use one of these formats:\n• M:SS.CS (e.g., "12:34.56")\n• H:MM:SS (e.g., "1:23:45")\n• H:MM:SS.CS (e.g., "1:23:45.67")\n\nWhere CS is centiseconds (2 digits)');
+        } else if (wrDuration === 0) {
+            alert('Time cannot be zero.');
+        } else {
+            sendCommand('setWorldRecord', { worldRecord: wrDuration });
+        }
+    }
+};
+
 // Handle icon file upload
 document.getElementById('split-icon').onchange = (event) => {
     const file = event.target.files[0];
@@ -607,7 +702,8 @@ document.getElementById('export-splits-btn').onclick = () => {
         bestCumulativeTimes: currentTimerState?.bestCumulativeTimes || [],
         personalBest: currentTimerState?.personalBest || 0,
         sumOfBest: currentTimerState?.sumOfBest || 0,
-        pbSplitTimes: currentTimerState?.pbSplitTimes || []
+        pbSplitTimes: currentTimerState?.pbSplitTimes || [],
+        worldRecord: currentTimerState?.worldRecord || 0
     };
     const dataStr = JSON.stringify(exportData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
@@ -679,11 +775,22 @@ document.getElementById('import-splits-file').onchange = (event) => {
                         bestCumulativeTimes: imported.bestCumulativeTimes || [],
                         personalBest: imported.personalBest || 0,
                         sumOfBest: imported.sumOfBest || 0,
-                        pbSplitTimes: imported.pbSplitTimes || []
+                        pbSplitTimes: imported.pbSplitTimes || [],
+                        worldRecord: imported.worldRecord || 0
                     });
                 }
                 
                 document.getElementById('timer-title').value = timerTitle;
+                
+                // Update world record input field if modal is open
+                if (splitsModal.style.display === 'block') {
+                    if (imported.worldRecord && imported.worldRecord > 0) {
+                        document.getElementById('world-record').value = formatTimeForInput(imported.worldRecord);
+                    } else {
+                        document.getElementById('world-record').value = '';
+                    }
+                }
+                
                 document.getElementById('import-splits-file').value = '';
             } catch (err) {
                 alert('Error parsing JSON: ' + err.name + ' - ' + err.message);

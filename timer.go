@@ -36,6 +36,7 @@ type TimerState struct {
 	PersonalBest        time.Duration   `json:"personalBest"`        // Overall personal best (full run time)
 	SumOfBest           time.Duration   `json:"sumOfBest"`           // Sum of all best segment times
 	PBSplitTimes        []time.Duration `json:"pbSplitTimes"`        // Cumulative times from the personal best run
+	WorldRecord         time.Duration   `json:"worldRecord"`         // World record time
 }
 
 // NewTimerState creates a new timer state
@@ -52,6 +53,7 @@ func NewTimerState() *TimerState {
 		PersonalBest:        0,
 		SumOfBest:           0,
 		PBSplitTimes:        []time.Duration{},
+		WorldRecord:         0,
 	}
 }
 
@@ -164,6 +166,10 @@ func (ts *TimerState) NextSplit() {
 			for i, split := range ts.Splits {
 				ts.PBSplitTimes[i] = split.CumulativeTime
 			}
+			// Check if new PB beats world record
+			if ts.WorldRecord > 0 && ts.PersonalBest < ts.WorldRecord {
+				ts.WorldRecord = ts.PersonalBest
+			}
 		}
 		// Set index to -1 to indicate run is complete
 		ts.CurrentSplitIndex = -1
@@ -256,5 +262,10 @@ func (ts *TimerState) RestorePBData(cmd map[string]interface{}) {
 				ts.PBSplitTimes[i] = time.Duration(floatVal)
 			}
 		}
+	}
+
+	// Restore world record
+	if worldRecord, ok := cmd["worldRecord"].(float64); ok {
+		ts.WorldRecord = time.Duration(worldRecord)
 	}
 }

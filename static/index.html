@@ -44,6 +44,10 @@
                     <span class="stat-label">Sum of Best:</span>
                     <span id="sob-time" class="stat-value">--</span>
                 </div>
+                <div class="stat-item">
+                    <span class="stat-label">World Record:</span>
+                    <span id="wr-time" class="stat-value">--</span>
+                </div>
             </div>
             <div class="buttons">
                 <button id="start-btn">Start</button>
@@ -75,6 +79,10 @@
               <label for="container-width">Container Width (px):</label>
               <input type="number" id="container-width" placeholder="e.g., 600" min="400" max="600">
               <button id="save-width-btn">Save Width</button>
+              <hr style="margin: 15px 0; border-color: var(--split-border);">
+              <label for="world-record">World Record Time (M:SS.CS or H:MM:SS.CS):</label>
+              <input type="text" id="world-record" placeholder="e.g., 12:34.56 or 1:23:45.67">
+              <button id="save-wr-btn">Save World Record</button>
               <hr style="margin: 15px 0; border-color: var(--split-border);">
               <label for="predefined-name">Split name:</label>
              <input type="text" id="predefined-name" placeholder="Split name" maxlength="50">
