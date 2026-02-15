@@ -9,6 +9,7 @@
 <body>
     <div class="setting-buttons-container">
     <div class="settings-button-container">
+        <span id="save-indicator" class="save-indicator"></span>
         <button id="settings-btn" class="settings-btn">Settings</button>
         <button id="splits-btn" class="settings-btn">Splits</button>
         <button id="theme-toggle-btn" class="settings-btn">🌙</button>
@@ -124,6 +125,32 @@
             <div class="modal-buttons">
                 <button id="save-edit-btn">Save Changes</button>
                 <button id="cancel-edit-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="recovery-modal" class="modal">
+        <div class="modal-content recovery-modal-content">
+            <h2>🔄 Recover Auto-Saved Splits</h2>
+            <p id="recovery-message" class="recovery-message"></p>
+            <div class="recovery-details">
+                <div class="recovery-detail-item">
+                    <span class="recovery-label">Title:</span>
+                    <span id="recovery-title" class="recovery-value"></span>
+                </div>
+                <div class="recovery-detail-item">
+                    <span class="recovery-label">Splits:</span>
+                    <span id="recovery-splits-count" class="recovery-value"></span>
+                </div>
+                <div class="recovery-detail-item">
+                    <span class="recovery-label">Saved:</span>
+                    <span id="recovery-time-ago" class="recovery-value"></span>
+                </div>
+            </div>
+            <div class="modal-buttons recovery-buttons">
+                <button id="recovery-discard-btn" class="discard-btn">Discard</button>
+                <button id="recovery-cancel-btn" class="cancel-btn">Cancel</button>
+                <button id="recovery-recover-btn" class="recover-btn">Recover</button>
             </div>
         </div>
     </div>

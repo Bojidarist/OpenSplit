@@ -12,6 +12,338 @@ let containerWidth = parseInt(localStorage.getItem('containerWidth')) || 600;
 const MIN_CONTAINER_WIDTH = 400;
 const MAX_CONTAINER_WIDTH = 600;
 let currentTimerState = null; // Store the latest timer state for export
+let hasReceivedInitialState = false; // Track if we've received first state update
+
+// Dirty state tracking for unsaved changes
+let dirtyState = {
+    hasUnsavedChanges: false,
+    lastModifiedTime: null,
+    lastExportTime: localStorage.getItem('lastExportTime') ? parseInt(localStorage.getItem('lastExportTime')) : null,
+    changeCount: 0,
+    changeTypes: [],
+    hasInteracted: false, // Track if user has done anything yet
+    skipRecoveryCheck: false // Skip recovery dialog (set after import/restore)
+};
+
+// Mark data as modified
+function markAsModified(changeType) {
+    dirtyState.hasUnsavedChanges = true;
+    dirtyState.lastModifiedTime = Date.now();
+    dirtyState.changeCount++;
+    dirtyState.hasInteracted = true; // User has done something
+    if (changeType) {
+        dirtyState.changeTypes.push(changeType);
+    }
+    updateSaveIndicator();
+    debouncedAutoSave();
+}
+
+// Mark data as saved
+function markAsSaved() {
+    dirtyState.hasUnsavedChanges = false;
+    dirtyState.lastExportTime = Date.now();
+    dirtyState.changeCount = 0;
+    dirtyState.changeTypes = [];
+    dirtyState.hasInteracted = true; // User has exported, show indicator
+    localStorage.setItem('lastExportTime', dirtyState.lastExportTime.toString());
+    updateSaveIndicator();
+}
+
+// Update save status indicator
+function updateSaveIndicator() {
+    const indicator = document.getElementById('save-indicator');
+    if (!indicator) return;
+    
+    // Only show indicator after user has interacted (made changes or imported)
+    if (!dirtyState.hasInteracted) {
+        indicator.classList.remove('visible');
+        return;
+    }
+    
+    indicator.classList.add('visible');
+    
+    if (dirtyState.hasUnsavedChanges) {
+        indicator.textContent = '⚠️ Unsaved';
+        indicator.className = 'save-indicator visible unsaved';
+        indicator.title = `${dirtyState.changeCount} unsaved change(s)`;
+    } else if (dirtyState.lastExportTime) {
+        const timeAgo = formatTimeAgo(dirtyState.lastExportTime);
+        indicator.textContent = `💾 Saved ${timeAgo}`;
+        indicator.className = 'save-indicator visible saved';
+        indicator.title = `Last exported: ${new Date(dirtyState.lastExportTime).toLocaleString()}`;
+    } else {
+        indicator.textContent = '💾 Not saved';
+        indicator.className = 'save-indicator visible saved';
+        indicator.title = 'No exports yet';
+    }
+}
+
+// Format relative time
+function formatTimeAgo(timestamp) {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+}
+
+// Debounce function
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Auto-save to localStorage
+function autoSaveToLocalStorage() {
+    if (!currentTimerState) return;
+    
+    const backupData = {
+        timestamp: Date.now(),
+        version: "1.0",
+        data: {
+            title: timerTitle,
+            splits: predefinedSplits,
+            containerWidth: containerWidth,
+            bestSplitTimes: currentTimerState?.bestSplitTimes || [],
+            bestCumulativeTimes: currentTimerState?.bestCumulativeTimes || [],
+            personalBest: currentTimerState?.personalBest || 0,
+            sumOfBest: currentTimerState?.sumOfBest || 0,
+            pbSplitTimes: currentTimerState?.pbSplitTimes || [],
+            worldRecord: currentTimerState?.worldRecord || 0
+        }
+    };
+    
+    try {
+        // Keep last 3 backups
+        const backups = JSON.parse(localStorage.getItem('opensplit_autosaves') || '[]');
+        backups.unshift(backupData);
+        backups.splice(3); // Keep only last 3
+        localStorage.setItem('opensplit_autosaves', JSON.stringify(backups));
+        console.log('Auto-saved to localStorage');
+    } catch (e) {
+        console.error('Auto-save failed:', e);
+        if (e.name === 'QuotaExceededError') {
+            // Try to clear old backups and retry
+            try {
+                localStorage.setItem('opensplit_autosaves', JSON.stringify([backupData]));
+            } catch (e2) {
+                console.error('Auto-save failed even after clearing:', e2);
+            }
+        }
+    }
+}
+
+// Debounced auto-save (2 seconds after last change)
+const debouncedAutoSave = debounce(autoSaveToLocalStorage, 2000);
+
+// Show toast notification
+function showToast(message, type = 'info', duration = 3000) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    
+    document.body.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // Auto-remove
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+// Enhanced export function
+function exportSplits() {
+    if (!currentTimerState) {
+        showToast('No timer state available to export', 'warning');
+        return;
+    }
+    
+    // Generate filename with title and timestamp
+    const now = new Date();
+    const timestamp = now.toISOString().slice(0, 19).replace(/:/g, '-').replace('T', '_');
+    const safeTitle = (timerTitle || 'splits').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const filename = `${safeTitle}_${timestamp}.json`;
+    
+    // Prepare export data
+    const exportData = {
+        version: "1.0",
+        exportedAt: now.toISOString(),
+        title: timerTitle,
+        splits: predefinedSplits,
+        containerWidth: containerWidth,
+        bestSplitTimes: currentTimerState?.bestSplitTimes || [],
+        bestCumulativeTimes: currentTimerState?.bestCumulativeTimes || [],
+        personalBest: currentTimerState?.personalBest || 0,
+        sumOfBest: currentTimerState?.sumOfBest || 0,
+        pbSplitTimes: currentTimerState?.pbSplitTimes || [],
+        worldRecord: currentTimerState?.worldRecord || 0
+    };
+    
+    // Create download
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', filename);
+    linkElement.click();
+    
+    // Update state
+    markAsSaved();
+    
+    // Show success notification
+    showToast(`✅ Splits exported: ${filename}`, 'success');
+    
+    console.log(`Exported ${predefinedSplits.length} splits to ${filename}`);
+}
+
+// Keyboard shortcuts
+function initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Ignore if user is typing in an input field
+        const activeElement = document.activeElement;
+        const isInputField = activeElement && (
+            activeElement.tagName === 'INPUT' || 
+            activeElement.tagName === 'TEXTAREA'
+        );
+        
+        // Ctrl+S / Cmd+S - Export splits
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            exportSplits();
+            return false;
+        }
+    });
+}
+
+// Recovery dialog for auto-saved data
+function checkForAutoSavedData() {
+    try {
+        // Skip if explicitly disabled (after import or restore)
+        if (dirtyState.skipRecoveryCheck) {
+            return;
+        }
+        
+        const backups = JSON.parse(localStorage.getItem('opensplit_autosaves') || '[]');
+        if (backups.length === 0) return;
+        
+        const latestBackup = backups[0];
+        const ageMinutes = (Date.now() - latestBackup.timestamp) / 1000 / 60;
+        
+        // Check if this backup has been dismissed
+        const dismissedTimestamp = localStorage.getItem('dismissedRecoveryTimestamp');
+        if (dismissedTimestamp && parseInt(dismissedTimestamp) === latestBackup.timestamp) {
+            return; // User already dismissed this backup
+        }
+        
+        // Detect if this is a new browser session (browser was closed/reopened)
+        // sessionStorage clears when browser closes, localStorage persists
+        const isNewSession = !sessionStorage.getItem('opensplit_session_active');
+        if (isNewSession) {
+            sessionStorage.setItem('opensplit_session_active', 'true');
+        }
+        
+        // Check if user recently saved (within 30 seconds)
+        const recentlySaved = dirtyState.lastExportTime && (Date.now() - dirtyState.lastExportTime) < 30000;
+        
+        // Check if backup has meaningful data (splits or progress)
+        const backupHasData = latestBackup.data.splits && latestBackup.data.splits.length > 0;
+        const backupHasProgress = latestBackup.data.personalBest > 0 || 
+                                  (latestBackup.data.bestSplitTimes && latestBackup.data.bestSplitTimes.length > 0);
+        
+        // Show recovery dialog if:
+        // 1. Backup is recent (< 24 hours)
+        // 2. User hasn't explicitly saved recently
+        // 3. Backup has splits or progress data
+        // 4a. This is a new session (browser restart) - show immediately, OR
+        // 4b. Backup is older than 1 minute (to avoid showing right after auto-save in same session)
+        const ageCheck = isNewSession || ageMinutes > 1;
+        
+        if (ageMinutes < 1440 && !recentlySaved && (backupHasData || backupHasProgress) && ageCheck) {
+            showRecoveryModal(latestBackup);
+        }
+    } catch (e) {
+        console.error('Error checking for auto-saved data:', e);
+    }
+}
+
+// Show recovery modal
+function showRecoveryModal(backup) {
+    const modal = document.getElementById('recovery-modal');
+    const message = document.getElementById('recovery-message');
+    const title = document.getElementById('recovery-title');
+    const splitsCount = document.getElementById('recovery-splits-count');
+    const timeAgo = document.getElementById('recovery-time-ago');
+    
+    const timeAgoStr = formatTimeAgo(backup.timestamp);
+    const dateStr = new Date(backup.timestamp).toLocaleString();
+    
+    message.textContent = 'We found auto-saved splits from a previous session. Would you like to recover them?';
+    title.textContent = backup.data.title || 'OpenSplit';
+    splitsCount.textContent = backup.data.splits.length;
+    timeAgo.textContent = `${timeAgoStr} (${dateStr})`;
+    
+    modal.style.display = 'block';
+    
+    // Store backup reference for button handlers
+    modal.dataset.backupTimestamp = backup.timestamp;
+}
+
+// Restore from backup
+function restoreFromBackup(data) {
+    timerTitle = data.title || 'OpenSplit';
+    predefinedSplits = data.splits || [];
+    containerWidth = data.containerWidth || containerWidth;
+    
+    // Update UI
+    container.style.width = containerWidth + 'px';
+    localStorage.setItem('containerWidth', containerWidth);
+    
+    // Send to server
+    sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
+    
+    // If PB data exists, restore it
+    if (data.bestSplitTimes || data.personalBest || data.pbSplitTimes) {
+        sendCommand('restorePBData', {
+            bestSplitTimes: data.bestSplitTimes || [],
+            bestCumulativeTimes: data.bestCumulativeTimes || [],
+            personalBest: data.personalBest || 0,
+            sumOfBest: data.sumOfBest || 0,
+            pbSplitTimes: data.pbSplitTimes || [],
+            worldRecord: data.worldRecord || 0
+        });
+    }
+    
+    // Mark as interacted and modified since we just restored
+    dirtyState.hasInteracted = true;
+    dirtyState.skipRecoveryCheck = true; // Don't show recovery dialog again this session
+    markAsModified('restored_from_backup');
+}
+
+// Warn before closing with unsaved changes
+window.addEventListener('beforeunload', (e) => {
+    if (dirtyState.hasUnsavedChanges && dirtyState.changeCount > 0) {
+        const message = 'You have unsaved changes. Export your splits before leaving?';
+        e.preventDefault();
+        e.returnValue = message;
+        return message;
+    }
+});
+
+// Update save indicator every minute
+setInterval(updateSaveIndicator, 60000);
 
 function applyTheme() {
     // Remove both classes first
@@ -131,8 +463,17 @@ function sendCommand(command, extra = {}) {
 }
 
 function updateTimer(state) {
+    // Store the previous PB to detect changes
+    const previousPB = currentTimerState?.personalBest || 0;
+    
     // Store the current state for export
     currentTimerState = state;
+    
+    // Check if PB was achieved
+    if (state.personalBest && state.personalBest > 0 && state.personalBest !== previousPB && previousPB !== 0) {
+        markAsModified('personal_best_achieved');
+        showToast('🎉 New Personal Best! Consider exporting your splits.', 'success', 5000);
+    }
     
     const time = formatTime(state.currentTime);
     const display = document.getElementById('timer-display');
@@ -163,6 +504,17 @@ function updateTimer(state) {
     timerTitle = state.timerTitle || 'OpenSplit';
     document.getElementById('game-title').textContent = timerTitle;
     updatePredefinedList();
+    
+    // Check for auto-saved data after receiving initial state from server
+    // This ensures we know what the current state is before offering recovery
+    if (!hasReceivedInitialState) {
+        hasReceivedInitialState = true;
+        // Small delay to ensure DOM is fully ready
+        setTimeout(() => {
+            checkForAutoSavedData();
+            updateSaveIndicator();
+        }, 50);
+    }
 
     // Update current split display
     const splitDisplay = document.getElementById('current-split-display');
@@ -596,6 +948,7 @@ function handleDrop(e) {
         
         // Sync with server and update UI
         sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
+        markAsModified('splits_reordered');
     }
     
     return false;
@@ -683,6 +1036,7 @@ function updatePredefinedList() {
             e.stopPropagation(); // Prevent drag events
             predefinedSplits.splice(index, 1);
             sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
+            markAsModified('split_deleted');
         };
         
         // Drag event handlers
@@ -758,6 +1112,7 @@ function saveEditedSplit() {
     
     // Send to server
     sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
+    markAsModified('split_edited');
     
     // Close modal
     closeEditModal();
@@ -783,6 +1138,7 @@ document.getElementById('add-predefined-btn').onclick = () => {
         const title = document.getElementById('timer-title').value.trim();
         timerTitle = title || 'OpenSplit';
         sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
+        markAsModified('split_added');
         document.getElementById('predefined-name').value = '';
         // Reset icon preview
         currentIconPreview = '🏃';
@@ -797,6 +1153,7 @@ document.getElementById('save-title-btn').onclick = () => {
     const title = document.getElementById('timer-title').value.trim();
     timerTitle = title || 'OpenSplit';
     sendCommand('setSplits', { splits: predefinedSplits, title: timerTitle });
+    markAsModified('title_changed');
 };
 
 // Save width button
@@ -877,6 +1234,7 @@ document.getElementById('save-wr-btn').onclick = () => {
     if (wrInput === '') {
         // Clear world record if input is empty
         sendCommand('setWorldRecord', { worldRecord: 0 });
+        markAsModified('world_record_cleared');
     } else {
         const wrDuration = parseTimeInput(wrInput);
         
@@ -886,6 +1244,7 @@ document.getElementById('save-wr-btn').onclick = () => {
             alert('Time cannot be zero.');
         } else {
             sendCommand('setWorldRecord', { worldRecord: wrDuration });
+            markAsModified('world_record_updated');
         }
     }
 };
@@ -954,25 +1313,7 @@ document.getElementById('edit-split-notes').addEventListener('input', () => {
 });
 
 document.getElementById('export-splits-btn').onclick = () => {
-    const exportData = {
-        title: timerTitle,
-        splits: predefinedSplits,
-        containerWidth: containerWidth,
-        // Export PB data if available
-        bestSplitTimes: currentTimerState?.bestSplitTimes || [],
-        bestCumulativeTimes: currentTimerState?.bestCumulativeTimes || [],
-        personalBest: currentTimerState?.personalBest || 0,
-        sumOfBest: currentTimerState?.sumOfBest || 0,
-        pbSplitTimes: currentTimerState?.pbSplitTimes || [],
-        worldRecord: currentTimerState?.worldRecord || 0
-    };
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const exportFileDefaultName = 'splits.json';
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+    exportSplits();
 };
 
 let isImporting = false;
@@ -1043,6 +1384,11 @@ document.getElementById('import-splits-file').onchange = (event) => {
                     });
                 }
                 
+                // Mark as interacted since user imported splits
+                dirtyState.hasInteracted = true;
+                dirtyState.skipRecoveryCheck = true; // Don't show recovery dialog after import
+                markAsModified('splits_imported');
+                
                 document.getElementById('timer-title').value = timerTitle;
                 
                 // Update world record input field if modal is open
@@ -1080,3 +1426,46 @@ document.getElementById('start-btn').onclick = () => sendCommand('start');
 document.getElementById('pause-btn').onclick = () => sendCommand('pause');
 document.getElementById('reset-btn').onclick = () => sendCommand('reset');
 document.getElementById('next-split-btn').onclick = () => sendCommand('nextSplit');
+
+// Initialize keyboard shortcuts
+initKeyboardShortcuts();
+
+// Recovery modal button handlers
+document.getElementById('recovery-cancel-btn').onclick = () => {
+    // Simply close the modal
+    document.getElementById('recovery-modal').style.display = 'none';
+};
+
+document.getElementById('recovery-discard-btn').onclick = () => {
+    // Store dismissed timestamp so we don't show this backup again
+    const modal = document.getElementById('recovery-modal');
+    const timestamp = modal.dataset.backupTimestamp;
+    localStorage.setItem('dismissedRecoveryTimestamp', timestamp);
+    modal.style.display = 'none';
+    showToast('Auto-save backup dismissed', 'info');
+};
+
+document.getElementById('recovery-recover-btn').onclick = () => {
+    // Get the backup and restore it
+    const modal = document.getElementById('recovery-modal');
+    const timestamp = parseInt(modal.dataset.backupTimestamp);
+    const backups = JSON.parse(localStorage.getItem('opensplit_autosaves') || '[]');
+    const backup = backups.find(b => b.timestamp === timestamp);
+    
+    if (backup) {
+        restoreFromBackup(backup.data);
+        showToast('✅ Splits restored from auto-save', 'success');
+    } else {
+        showToast('❌ Could not find backup to restore', 'error');
+    }
+    
+    modal.style.display = 'none';
+};
+
+// Click outside recovery modal to close
+window.addEventListener('click', (event) => {
+    const recoveryModal = document.getElementById('recovery-modal');
+    if (event.target === recoveryModal) {
+        recoveryModal.style.display = 'none';
+    }
+});
