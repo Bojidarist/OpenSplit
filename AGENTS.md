@@ -186,4 +186,251 @@ function connectWS() {
 - **TimerState**: Pure data structure with timer operations
 - **Frontend**: Vanilla JavaScript with minimal dependencies
 
+## Best Practices
+
+### Go Best Practices
+
+#### Concurrency and Goroutines
+- **Use channels for communication**: Prefer channels over shared memory for goroutine communication
+- **Always close channels**: Close channels when done to prevent goroutine leaks
+- **Handle panics in goroutines**: Use `defer recover()` in long-running goroutines
+- **Avoid goroutine leaks**: Ensure all goroutines have a termination condition
+- **Use context for cancellation**: Pass `context.Context` for timeout and cancellation support
+
+```go
+// Good: Using channels and proper cleanup
+func (h *Hub) run() {
+    defer func() {
+        if r := recover(); r != nil {
+            log.Printf("Hub recovered from panic: %v", r)
+        }
+    }()
+    
+    for {
+        select {
+        case client := <-h.register:
+            h.clients[client] = true
+        case client := <-h.unregister:
+            if _, ok := h.clients[client]; ok {
+                delete(h.clients, client)
+                close(client.send)
+            }
+        }
+    }
+}
+```
+
+#### Memory Management
+- **Use sync.Pool for frequently allocated objects**: Reduce GC pressure
+- **Avoid unnecessary allocations**: Reuse slices and maps where appropriate
+- **Profile before optimizing**: Use `pprof` to identify actual bottlenecks
+- **Use buffered channels wisely**: Size buffers based on expected load
+
+#### Error Handling
+- **Return errors, don't panic**: Reserve panics for truly unrecoverable situations
+- **Wrap errors with context**: Use `fmt.Errorf("context: %w", err)` for error chains
+- **Check all errors**: Never ignore error return values
+- **Log errors at appropriate levels**: Debug, Info, Warning, Error, Fatal
+
+```go
+// Good: Proper error handling
+func (ts *TimerState) Split(splitName string) error {
+    if ts.Status != "running" {
+        return fmt.Errorf("cannot split: timer is %s, expected running", ts.Status)
+    }
+    
+    currentTime := ts.CurrentTime
+    split := Split{
+        Name:     splitName,
+        Duration: currentTime,
+    }
+    ts.Splits = append(ts.Splits, split)
+    return nil
+}
+```
+
+#### Testing Best Practices
+- **Table-driven tests**: Use test tables for multiple test cases
+- **Test edge cases**: Empty inputs, nil values, boundary conditions
+- **Use subtests**: Organize tests with `t.Run()` for better output
+- **Mock external dependencies**: Use interfaces for testability
+- **Test concurrency**: Use `go test -race` to detect race conditions
+
+```go
+func TestTimerSplit(t *testing.T) {
+    tests := []struct {
+        name        string
+        status      string
+        splitName   string
+        expectError bool
+    }{
+        {"valid split", "running", "Level 1", false},
+        {"stopped timer", "stopped", "Level 1", true},
+        {"paused timer", "paused", "Level 1", true},
+    }
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            ts := &TimerState{Status: tt.status}
+            err := ts.Split(tt.splitName)
+            if (err != nil) != tt.expectError {
+                t.Errorf("Split() error = %v, expectError %v", err, tt.expectError)
+            }
+        })
+    }
+}
+```
+
+### WebSocket Best Practices
+
+#### Connection Management
+- **Implement heartbeat/ping-pong**: Detect dead connections early
+- **Set read/write deadlines**: Prevent goroutines from blocking forever
+- **Handle disconnections gracefully**: Clean up resources and allow reconnection
+- **Rate limit messages**: Prevent abuse and resource exhaustion
+- **Validate incoming messages**: Never trust client input
+
+```go
+// Good: Proper WebSocket setup with timeouts
+const (
+    writeWait = 10 * time.Second
+    pongWait = 60 * time.Second
+    pingPeriod = (pongWait * 9) / 10
+)
+
+func (c *Client) writePump() {
+    ticker := time.NewTicker(pingPeriod)
+    defer ticker.Stop()
+    
+    for {
+        select {
+        case message := <-c.send:
+            c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+            if err := c.conn.WriteJSON(message); err != nil {
+                return
+            }
+        case <-ticker.C:
+            c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+            if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+                return
+            }
+        }
+    }
+}
+```
+
+#### State Synchronization
+- **Broadcast state changes**: Keep all clients synchronized
+- **Send full state on connect**: New clients get current state immediately
+- **Use atomic operations**: For shared counters and flags
+- **Version your messages**: Allow protocol evolution without breaking changes
+- **Handle partial updates**: Minimize bandwidth with incremental updates when appropriate
+
+#### Security Considerations
+- **Validate origin**: Check Origin header to prevent CSRF
+- **Use authentication**: Implement token-based auth for sensitive operations
+- **Sanitize inputs**: Prevent injection attacks and malformed data
+- **Limit message size**: Prevent memory exhaustion attacks
+- **Use TLS in production**: Always use WSS (WebSocket Secure) in production
+
+### Performance Best Practices
+
+#### Backend Optimization
+- **Minimize allocations in hot paths**: Reuse objects, avoid repeated allocations
+- **Use benchmarks**: Write and run benchmarks for critical code
+- **Batch operations**: Group database writes, reduce network roundtrips
+- **Use appropriate data structures**: Maps for lookups, slices for iteration
+
+```bash
+# Run benchmarks
+go test -bench=. -benchmem
+
+# Profile CPU usage
+go test -cpuprofile=cpu.prof -bench=.
+```
+
+#### Frontend Optimization
+- **Debounce user input**: Reduce unnecessary WebSocket messages
+- **Update DOM efficiently**: Batch updates, use DocumentFragment
+- **Lazy render off-screen content**: Only render visible splits
+- **Cache DOM queries**: Store element references
+- **Use CSS transitions**: Offload animations to GPU
+
+```javascript
+// Good: Debounced input handling
+let updateTimer;
+function handleInput(value) {
+    clearTimeout(updateTimer);
+    updateTimer = setTimeout(() => {
+        ws.send(JSON.stringify({ command: "update", value }));
+    }, 300);
+}
+```
+
+### Code Organization Best Practices
+
+#### Project Structure
+- **Keep packages focused**: Each package should have a single responsibility
+- **Avoid circular dependencies**: Structure imports hierarchically
+- **Use internal packages**: Prevent external imports of internal APIs
+- **Separate concerns**: Business logic, networking, and presentation layers
+- **Group related files**: `*_test.go` beside implementation files
+
+#### Documentation
+- **Write package documentation**: Start each package with a doc comment
+- **Document exported APIs**: Every exported function, type, method needs comments
+- **Include examples**: Use `Example` tests for documentation
+- **Maintain AGENTS.md**: Keep this file updated with architectural changes
+- **Use meaningful commit messages**: Follow conventional commits format
+
+```go
+// Package timer provides real-time speedrun timing functionality.
+// It manages timer state, splits, and WebSocket-based synchronization
+// across multiple connected clients.
+package timer
+
+// Start begins timer execution, setting the status to "running" and
+// recording the start time. Returns an error if the timer is already
+// running.
+func (ts *TimerState) Start() error {
+    // Implementation
+}
+```
+
+#### Code Maintainability
+- **DRY (Don't Repeat Yourself)**: Extract common logic into functions
+- **KISS (Keep It Simple)**: Prefer simple solutions over clever ones
+- **YAGNI (You Aren't Gonna Need It)**: Don't add features speculatively
+- **Refactor incrementally**: Small, continuous improvements over big rewrites
+- **Delete dead code**: Remove unused functions, commented-out code
+
+### Development Best Practices
+
+#### Debugging
+- **Use structured logging**: Include context (client ID, command type, etc.)
+- **Check logs first**: Review server.log before adding print statements
+- **Reproduce systematically**: Create minimal test cases
+
+```bash
+# View recent logs
+tail -n 100 server.log
+
+# Watch logs in real-time
+tail -f server.log | grep ERROR
+```
+
+#### WebSocket Pitfalls
+- **Not handling partial messages**: WebSocket frames may be fragmented
+- **Sending to closed connections**: Check client map before sending
+- **Blocking on send**: Use buffered channels and timeouts
+- **Missing connection cleanup**: Always defer conn.Close()
+- **Ignoring message order**: WebSocket guarantees order, maintain it
+
+#### General Pitfalls
+- **Premature optimization**: Profile first, optimize bottlenecks
+- **Over-engineering**: Start simple, add complexity only when needed
+- **Skipping tests**: Tests save time in the long run
+- **Hardcoding values**: Use constants and configuration
+- **Ignoring errors**: Every error is an opportunity to handle failures gracefully
+
 Follow these guidelines to maintain consistency and quality in the OpenSplit codebase.
