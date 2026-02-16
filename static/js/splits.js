@@ -54,32 +54,125 @@ export function formatDelta(durationNs) {
 }
 
 /**
+ * Helper to set textContent only when it has changed.
+ * @param {HTMLElement} el - The element to update.
+ * @param {string} text - The desired text content.
+ */
+function setTextIfChanged(el, text) {
+    if (el.textContent !== text) {
+        el.textContent = text;
+    }
+}
+
+/**
+ * Helper to set className only when it has changed.
+ * @param {HTMLElement} el - The element to update.
+ * @param {string} cls - The desired className.
+ */
+function setClassIfChanged(el, cls) {
+    if (el.className !== cls) {
+        el.className = cls;
+    }
+}
+
+/**
+ * Creates a new split row DOM element with the expected child structure.
+ * @returns {HTMLElement} A div.split-row with icon, name, delta, time, and pb children.
+ */
+function createSplitRow() {
+    const row = document.createElement('div');
+    row.className = 'split-row';
+
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'split-icon';
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'split-name';
+
+    const deltaDiv = document.createElement('div');
+    deltaDiv.className = 'split-delta';
+
+    const cumulativeDiv = document.createElement('div');
+    cumulativeDiv.className = 'split-time';
+
+    const pbDiv = document.createElement('div');
+    pbDiv.className = 'split-pb-time';
+
+    row.appendChild(iconSpan);
+    row.appendChild(nameDiv);
+    row.appendChild(deltaDiv);
+    row.appendChild(cumulativeDiv);
+    row.appendChild(pbDiv);
+    return row;
+}
+
+/**
+ * Updates the icon span to display the given icon (emoji text or base64 image).
+ * Only modifies the DOM if the icon has actually changed.
+ * @param {HTMLElement} iconSpan - The .split-icon element.
+ * @param {string} icon - Emoji text or a data:image URI.
+ */
+function updateIcon(iconSpan, icon) {
+    if (icon && icon.startsWith('data:image')) {
+        const existingImg = iconSpan.querySelector('img');
+        if (existingImg) {
+            if (existingImg.src !== icon) {
+                existingImg.src = icon;
+            }
+        } else {
+            iconSpan.textContent = '';
+            const img = document.createElement('img');
+            img.src = icon;
+            img.alt = 'icon';
+            iconSpan.appendChild(img);
+        }
+    } else {
+        setTextIfChanged(iconSpan, icon);
+    }
+}
+
+/**
  * Renders split rows in the timer view.
+ * Uses DOM diffing: reuses existing row elements and only updates
+ * changed properties to avoid flickering and layout thrashing.
  * @param {Object} state - The timer state from the server.
  */
 export function updateSplits(state) {
     const list = document.getElementById('splits-body');
-    list.innerHTML = '';
     const splits = state.splits || [];
     const statePredefinedSplits = state.predefinedSplits || [];
     const currentSplitIndex = state.currentSplitIndex;
     const pbSplitTimes = state.pbSplitTimes || [];
 
-    if (statePredefinedSplits && statePredefinedSplits.length > 0) {
+    // Determine the data source and row count
+    const usePredefined = statePredefinedSplits && statePredefinedSplits.length > 0;
+    const rowCount = usePredefined ? statePredefinedSplits.length : splits.length;
+
+    // Adjust DOM row count: add or remove rows as needed
+    const existingRows = list.children;
+    while (existingRows.length > rowCount) {
+        list.removeChild(list.lastChild);
+    }
+    while (existingRows.length < rowCount) {
+        list.appendChild(createSplitRow());
+    }
+
+    if (usePredefined) {
         statePredefinedSplits.forEach((splitDef, index) => {
-            const row = document.createElement('div');
-            row.className = 'split-row';
+            const row = existingRows[index];
 
-            // Add highlighting classes
+            // Compute desired className
+            let rowClass = 'split-row';
             if (currentSplitIndex === -1 && splits.length > 0) {
-                row.classList.add('completed');
+                rowClass += ' completed';
             } else if (index < currentSplitIndex) {
-                row.classList.add('completed');
+                rowClass += ' completed';
             } else if (index === currentSplitIndex && state.status === 'running') {
-                row.classList.add('current');
+                rowClass += ' current';
             }
+            setClassIfChanged(row, rowClass);
 
-            // Convert old format to new format if needed
+            // Resolve name and icon from split definition
             let name, icon;
             if (typeof splitDef === 'string') {
                 name = splitDef;
@@ -92,105 +185,66 @@ export function updateSplits(state) {
                 icon = DEFAULT_ICON;
             }
 
-            // Icon (emoji or image)
-            const iconSpan = document.createElement('span');
-            iconSpan.className = 'split-icon';
-            if (icon && icon.startsWith('data:image')) {
-                const img = document.createElement('img');
-                img.src = icon;
-                img.alt = 'icon';
-                iconSpan.innerHTML = '';
-                iconSpan.appendChild(img);
-            } else {
-                iconSpan.textContent = icon;
-            }
+            // Update children: icon, name, delta, cumulative time, PB
+            const iconSpan = row.children[0];
+            const nameDiv = row.children[1];
+            const deltaDiv = row.children[2];
+            const cumulativeDiv = row.children[3];
+            const pbDiv = row.children[4];
 
-            // Split name
-            const nameDiv = document.createElement('div');
-            nameDiv.className = 'split-name';
-            nameDiv.textContent = name;
+            updateIcon(iconSpan, icon);
+            setTextIfChanged(nameDiv, name);
 
             // Delta
-            const deltaDiv = document.createElement('div');
-            deltaDiv.className = 'split-delta';
+            let deltaText = '--';
+            let deltaClass = 'split-delta';
             if (index < splits.length && splits[index].delta !== undefined) {
                 const delta = splits[index].delta;
                 if (delta !== 0) {
-                    deltaDiv.textContent = formatDelta(delta);
-                    deltaDiv.classList.add(delta < 0 ? 'ahead' : 'behind');
-                } else {
-                    deltaDiv.textContent = '--';
+                    deltaText = formatDelta(delta);
+                    deltaClass += delta < 0 ? ' ahead' : ' behind';
                 }
-            } else {
-                deltaDiv.textContent = '--';
             }
+            setTextIfChanged(deltaDiv, deltaText);
+            setClassIfChanged(deltaDiv, deltaClass);
 
             // Cumulative time
-            const cumulativeDiv = document.createElement('div');
-            cumulativeDiv.className = 'split-time';
-            if (index < splits.length) {
-                cumulativeDiv.textContent = formatTime(splits[index].cumulativeTime);
-            } else {
-                cumulativeDiv.textContent = '--';
-            }
+            const cumText = index < splits.length ? formatTime(splits[index].cumulativeTime) : '--';
+            setTextIfChanged(cumulativeDiv, cumText);
 
             // PB time
-            const pbDiv = document.createElement('div');
-            pbDiv.className = 'split-pb-time';
-            if (index < pbSplitTimes.length && pbSplitTimes[index] > 0) {
-                pbDiv.textContent = formatTime(pbSplitTimes[index]);
-            } else {
-                pbDiv.textContent = '--';
-            }
-
-            row.appendChild(iconSpan);
-            row.appendChild(nameDiv);
-            row.appendChild(deltaDiv);
-            row.appendChild(cumulativeDiv);
-            row.appendChild(pbDiv);
-            list.appendChild(row);
+            const pbText = (index < pbSplitTimes.length && pbSplitTimes[index] > 0) ? formatTime(pbSplitTimes[index]) : '--';
+            setTextIfChanged(pbDiv, pbText);
         });
     } else {
         // Fallback: render from completed splits array
         splits.forEach((split, index) => {
-            const row = document.createElement('div');
-            row.className = 'split-row';
+            const row = existingRows[index];
+            setClassIfChanged(row, 'split-row');
 
-            const iconSpan = document.createElement('span');
-            iconSpan.className = 'split-icon';
-            iconSpan.textContent = DEFAULT_ICON;
+            const iconSpan = row.children[0];
+            const nameDiv = row.children[1];
+            const deltaDiv = row.children[2];
+            const cumulativeDiv = row.children[3];
+            const pbDiv = row.children[4];
 
-            const nameDiv = document.createElement('div');
-            nameDiv.className = 'split-name';
-            nameDiv.textContent = split.name;
+            updateIcon(iconSpan, DEFAULT_ICON);
+            setTextIfChanged(nameDiv, split.name);
 
-            const deltaDiv = document.createElement('div');
-            deltaDiv.className = 'split-delta';
+            // Delta
+            let deltaText = '--';
+            let deltaClass = 'split-delta';
             if (split.delta !== undefined && split.delta !== 0) {
-                deltaDiv.textContent = formatDelta(split.delta);
-                deltaDiv.classList.add(split.delta < 0 ? 'ahead' : 'behind');
-            } else {
-                deltaDiv.textContent = '--';
+                deltaText = formatDelta(split.delta);
+                deltaClass += split.delta < 0 ? ' ahead' : ' behind';
             }
+            setTextIfChanged(deltaDiv, deltaText);
+            setClassIfChanged(deltaDiv, deltaClass);
 
-            const cumulativeDiv = document.createElement('div');
-            cumulativeDiv.className = 'split-time';
-            cumulativeDiv.textContent = formatTime(split.cumulativeTime);
+            setTextIfChanged(cumulativeDiv, formatTime(split.cumulativeTime));
 
-            const pbDiv = document.createElement('div');
-            pbDiv.className = 'split-pb-time';
-            if (index < pbSplitTimes.length && pbSplitTimes[index] > 0) {
-                pbDiv.textContent = formatTime(pbSplitTimes[index]);
-            } else {
-                pbDiv.textContent = '--';
-            }
-
-            row.appendChild(iconSpan);
-            row.appendChild(nameDiv);
-            row.appendChild(deltaDiv);
-            row.appendChild(cumulativeDiv);
-            row.appendChild(pbDiv);
-            list.appendChild(row);
+            const pbText = (index < pbSplitTimes.length && pbSplitTimes[index] > 0) ? formatTime(pbSplitTimes[index]) : '--';
+            setTextIfChanged(pbDiv, pbText);
         });
     }
 }

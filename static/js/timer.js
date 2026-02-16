@@ -18,6 +18,34 @@ import { formatTime, updateSplits, updatePredefinedList } from './splits.js';
 import { showToast } from './utils.js';
 import { checkForAutoSavedData } from './modals.js';
 
+/** Tracks the last predefined splits JSON to detect changes. */
+let lastPredefinedSplitsJSON = '';
+
+/** Tracks the last timer title to detect changes. */
+let lastTimerTitle = '';
+
+/**
+ * Helper to set textContent only when it has changed.
+ * @param {HTMLElement} el - The element to update.
+ * @param {string} text - The desired text content.
+ */
+function setTextIfChanged(el, text) {
+    if (el.textContent !== text) {
+        el.textContent = text;
+    }
+}
+
+/**
+ * Helper to set an element's style.display only when it has changed.
+ * @param {HTMLElement} el - The element to update.
+ * @param {string} value - The desired display value.
+ */
+function setDisplayIfChanged(el, value) {
+    if (el.style.display !== value) {
+        el.style.display = value;
+    }
+}
+
 /**
  * Main UI update function — called on every WebSocket message.
  * Updates all display elements to reflect the current server state.
@@ -36,30 +64,51 @@ export function updateTimer(state) {
 
     const time = formatTime(state.currentTime);
     const display = document.getElementById('timer-display');
-    display.textContent = time;
-    display.className = 'timer ' + (state.status === 'paused' ? 'paused' : '');
-
-    // Sync predefined splits and title from server
-    if (state.predefinedSplits && Array.isArray(state.predefinedSplits)) {
-        setPredefinedSplits(state.predefinedSplits.map(split => {
-            if (typeof split === 'string') {
-                return { name: split, icon: DEFAULT_ICON, notes: '' };
-            } else if (split && typeof split === 'object') {
-                return {
-                    name: split.name || 'Unnamed',
-                    icon: split.icon || DEFAULT_ICON,
-                    notes: split.notes || '',
-                };
-            }
-            return { name: 'Unnamed', icon: DEFAULT_ICON, notes: '' };
-        }));
-    } else {
-        setPredefinedSplits([]);
+    setTextIfChanged(display, time);
+    const timerClass = 'timer ' + (state.status === 'paused' ? 'paused' : '');
+    if (display.className !== timerClass) {
+        display.className = timerClass;
     }
 
-    setTimerTitle(state.timerTitle || DEFAULT_TITLE);
-    document.getElementById('game-title').textContent = state.timerTitle || DEFAULT_TITLE;
-    updatePredefinedList();
+    // Sync predefined splits and title from server — only update when changed
+    let predefinedSplitsChanged = false;
+    if (state.predefinedSplits && Array.isArray(state.predefinedSplits)) {
+        const newJSON = JSON.stringify(state.predefinedSplits);
+        if (newJSON !== lastPredefinedSplitsJSON) {
+            lastPredefinedSplitsJSON = newJSON;
+            predefinedSplitsChanged = true;
+            setPredefinedSplits(state.predefinedSplits.map(split => {
+                if (typeof split === 'string') {
+                    return { name: split, icon: DEFAULT_ICON, notes: '' };
+                } else if (split && typeof split === 'object') {
+                    return {
+                        name: split.name || 'Unnamed',
+                        icon: split.icon || DEFAULT_ICON,
+                        notes: split.notes || '',
+                    };
+                }
+                return { name: 'Unnamed', icon: DEFAULT_ICON, notes: '' };
+            }));
+        }
+    } else {
+        if (lastPredefinedSplitsJSON !== '[]') {
+            lastPredefinedSplitsJSON = '[]';
+            predefinedSplitsChanged = true;
+            setPredefinedSplits([]);
+        }
+    }
+
+    const newTitle = state.timerTitle || DEFAULT_TITLE;
+    if (newTitle !== lastTimerTitle) {
+        lastTimerTitle = newTitle;
+        setTimerTitle(newTitle);
+        document.getElementById('game-title').textContent = newTitle;
+    }
+
+    // Only rebuild predefined list when the splits actually changed
+    if (predefinedSplitsChanged) {
+        updatePredefinedList();
+    }
 
     // Check for auto-saved data after receiving initial state
     if (!hasReceivedInitialState) {
@@ -76,20 +125,20 @@ export function updateTimer(state) {
     const notesText = notesDisplay.querySelector('.notes-text');
 
     if (predefinedSplits.length > 0 && state.currentSplitIndex >= 0 && state.currentSplitIndex < predefinedSplits.length) {
-        splitDisplay.textContent = `${predefinedSplits[state.currentSplitIndex].name}`;
+        setTextIfChanged(splitDisplay, predefinedSplits[state.currentSplitIndex].name);
 
         const currentSplit = predefinedSplits[state.currentSplitIndex];
         if (currentSplit.notes && currentSplit.notes.trim()) {
-            notesText.textContent = currentSplit.notes;
+            setTextIfChanged(notesText, currentSplit.notes);
             notesDisplay.classList.add('show');
         } else {
             notesDisplay.classList.remove('show');
         }
     } else {
         if (predefinedSplits.length > 0) {
-            splitDisplay.textContent = 'Ready to start';
+            setTextIfChanged(splitDisplay, 'Ready to start');
         } else {
-            splitDisplay.textContent = 'No splits defined';
+            setTextIfChanged(splitDisplay, 'No splits defined');
         }
         notesDisplay.classList.remove('show');
     }
@@ -98,9 +147,9 @@ export function updateTimer(state) {
     const prevSegmentDisplay = document.getElementById('previous-segment');
     if (state.splits && state.splits.length > 0) {
         const lastSplit = state.splits[state.splits.length - 1];
-        prevSegmentDisplay.textContent = `Previous Segment: ${formatTime(lastSplit.segmentTime)}`;
+        setTextIfChanged(prevSegmentDisplay, `Previous Segment: ${formatTime(lastSplit.segmentTime)}`);
     } else {
-        prevSegmentDisplay.textContent = 'Previous Segment: --';
+        setTextIfChanged(prevSegmentDisplay, 'Previous Segment: --');
     }
 
     // Update PB, SoB, and WR displays
@@ -108,9 +157,12 @@ export function updateTimer(state) {
     const sobDisplay = document.getElementById('sob-time');
     const wrDisplay = document.getElementById('wr-time');
 
-    pbDisplay.textContent = (state.personalBest && state.personalBest > 0) ? formatTime(state.personalBest) : '--';
-    sobDisplay.textContent = (state.sumOfBest && state.sumOfBest > 0) ? formatTime(state.sumOfBest) : '--';
-    wrDisplay.textContent = (state.worldRecord && state.worldRecord > 0) ? formatTime(state.worldRecord) : '--';
+    const pbText = (state.personalBest && state.personalBest > 0) ? formatTime(state.personalBest) : '--';
+    const sobText = (state.sumOfBest && state.sumOfBest > 0) ? formatTime(state.sumOfBest) : '--';
+    const wrText = (state.worldRecord && state.worldRecord > 0) ? formatTime(state.worldRecord) : '--';
+    setTextIfChanged(pbDisplay, pbText);
+    setTextIfChanged(sobDisplay, sobText);
+    setTextIfChanged(wrDisplay, wrText);
 
     // Show/hide next split button
     const nextBtn = document.getElementById('next-split-btn');
@@ -130,21 +182,21 @@ export function updateTimer(state) {
     const resetBtn = document.getElementById('reset-btn');
 
     if (runCompleted) {
-        startBtn.style.display = 'none';
-        pauseBtn.style.display = 'none';
-        resetBtn.style.display = 'inline-block';
+        setDisplayIfChanged(startBtn, 'none');
+        setDisplayIfChanged(pauseBtn, 'none');
+        setDisplayIfChanged(resetBtn, 'inline-block');
     } else if (atStartingPosition) {
-        startBtn.style.display = 'inline-block';
-        pauseBtn.style.display = 'none';
-        resetBtn.style.display = 'none';
+        setDisplayIfChanged(startBtn, 'inline-block');
+        setDisplayIfChanged(pauseBtn, 'none');
+        setDisplayIfChanged(resetBtn, 'none');
     } else if (state.status === 'stopped') {
-        startBtn.style.display = 'inline-block';
-        pauseBtn.style.display = 'none';
-        resetBtn.style.display = 'inline-block';
+        setDisplayIfChanged(startBtn, 'inline-block');
+        setDisplayIfChanged(pauseBtn, 'none');
+        setDisplayIfChanged(resetBtn, 'inline-block');
     } else {
-        startBtn.style.display = 'none';
-        pauseBtn.style.display = 'inline-block';
-        resetBtn.style.display = 'inline-block';
+        setDisplayIfChanged(startBtn, 'none');
+        setDisplayIfChanged(pauseBtn, 'inline-block');
+        setDisplayIfChanged(resetBtn, 'inline-block');
     }
 
     updateSplits(state);
