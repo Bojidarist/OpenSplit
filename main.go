@@ -11,6 +11,8 @@ import (
 var staticFS embed.FS
 
 func main() {
+	opts := ParseCLI()
+
 	hub := NewHub()
 	go hub.Run()
 
@@ -21,7 +23,7 @@ func main() {
 	staticSub, _ := fs.Sub(staticFS, "static")
 	http.Handle("/", http.FileServer(http.FS(staticSub)))
 
-	port := GetServerPort()
+	port := GetServerPort(opts.Port)
 	log.Printf("Server starting on %s", port)
 	log.Fatal(http.ListenAndServe(port, nil))
 }

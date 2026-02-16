@@ -40,8 +40,15 @@ const (
 	ClientSendBufferSize = 256
 )
 
-// GetServerPort returns the server port, checking the PORT environment variable first.
-func GetServerPort() string {
+// GetServerPort returns the server port using the following precedence:
+// CLI flag (cliPort) > PORT environment variable > DefaultServerPort.
+func GetServerPort(cliPort string) string {
+	if cliPort != "" {
+		if cliPort[0] != ':' {
+			return ":" + cliPort
+		}
+		return cliPort
+	}
 	if port := os.Getenv("PORT"); port != "" {
 		if port[0] != ':' {
 			return ":" + port

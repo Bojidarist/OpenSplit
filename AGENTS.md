@@ -9,8 +9,29 @@ This document provides guidelines for agentic coding assistants working on the O
 # Build the application
 go build -o ./build/opensplit
 
+# Build with version injected (for releases)
+go build -ldflags "-X main.Version=v1.0.0" -o ./build/opensplit
+
 # Run the application locally (starts server on :8080)
 go run .
+
+# Run on a custom port
+go run . -p 9090
+```
+
+### CLI Flags
+```bash
+# Print version and exit
+./build/opensplit -v
+./build/opensplit --version
+
+# Set server port (overrides PORT env var and default :8080)
+./build/opensplit -p 9090
+./build/opensplit --port 9090
+
+# Show help
+./build/opensplit -h
+./build/opensplit --help
 ```
 
 ### Testing
