@@ -47,7 +47,7 @@ func NewTimerState() *TimerState {
 		Status:              "stopped",
 		Splits:              []Split{},
 		PredefinedSplits:    []SplitDefinition{},
-		TimerTitle:          "OpenSplit",
+		TimerTitle:          DefaultTimerTitle,
 		CurrentSplitIndex:   -1,
 		BestSplitTimes:      []time.Duration{},
 		BestCumulativeTimes: []time.Duration{},
@@ -199,28 +199,6 @@ func (ts *TimerState) CalculateSumOfBest() {
 	for _, bestTime := range ts.BestSplitTimes {
 		ts.SumOfBest += bestTime
 	}
-}
-
-// GetCurrentDelta returns the delta for the current running split
-// This is used to show real-time delta during an active split
-func (ts *TimerState) GetCurrentDelta() time.Duration {
-	if ts.Status != "running" || ts.CurrentSplitIndex < 0 {
-		return 0
-	}
-
-	// Calculate what the next split index would be (the one we're currently working on)
-	nextSplitIndex := ts.CurrentSplitIndex + 1
-	if nextSplitIndex >= len(ts.BestCumulativeTimes) {
-		return 0
-	}
-
-	// If we don't have a best time for this split yet, no delta to show
-	if ts.BestCumulativeTimes[nextSplitIndex] == 0 {
-		return 0
-	}
-
-	// Delta = current time - best cumulative time for next split
-	return ts.CurrentTime - ts.BestCumulativeTimes[nextSplitIndex]
 }
 
 // RestorePBData restores personal best data from imported file

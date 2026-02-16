@@ -21,6 +21,7 @@ func main() {
 	staticSub, _ := fs.Sub(staticFS, "static")
 	http.Handle("/", http.FileServer(http.FS(staticSub)))
 
-	log.Println("Server starting on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	port := GetServerPort()
+	log.Printf("Server starting on %s", port)
+	log.Fatal(http.ListenAndServe(port, nil))
 }

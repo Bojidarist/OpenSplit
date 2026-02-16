@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speedrun Timer</title>
+    <title>OpenSplit</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -58,7 +58,7 @@
                 <button id="start-btn">Start</button>
                 <button id="pause-btn">Pause</button>
                 <button id="reset-btn">Reset</button>
-                <button id="next-split-btn" style="display:none;">Next Split</button>
+                <button id="next-split-btn" class="hidden">Next Split</button>
             </div>
         </div>
     </div>
@@ -80,15 +80,15 @@
               <label for="timer-title">Timer Title:</label>
               <input type="text" id="timer-title" placeholder="e.g., The Legend of Zelda" maxlength="100" value="OpenSplit">
               <button id="save-title-btn">Save Title</button>
-              <hr style="margin: 15px 0; border-color: var(--split-border);">
+              <hr class="modal-divider">
               <label for="container-width">Container Width (px):</label>
               <input type="number" id="container-width" placeholder="e.g., 600" min="400" max="600">
               <button id="save-width-btn">Save Width</button>
-              <hr style="margin: 15px 0; border-color: var(--split-border);">
+              <hr class="modal-divider">
               <label for="world-record">World Record Time (M:SS.CS or H:MM:SS.CS):</label>
               <input type="text" id="world-record" placeholder="e.g., 12:34.56 or 1:23:45.67">
               <button id="save-wr-btn">Save World Record</button>
-              <hr style="margin: 15px 0; border-color: var(--split-border);">
+              <hr class="modal-divider">
               <label for="predefined-name">Split name:</label>
              <input type="text" id="predefined-name" placeholder="Split name" maxlength="50">
              <label for="split-icon">Split icon (optional):</label>
@@ -99,7 +99,7 @@
              <button id="add-predefined-btn">Add Split</button>
              <div class="modal-buttons">
                  <button id="export-splits-btn">Export Splits</button>
-                 <input type="file" id="import-splits-file" accept=".json" style="display:none;">
+                 <input type="file" id="import-splits-file" accept=".json" class="hidden">
                  <button id="import-splits-btn">Import Splits</button>
              </div>
             <div id="predefined-list" class="predefined-list"></div>
@@ -155,6 +155,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>

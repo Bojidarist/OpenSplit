@@ -28,6 +28,8 @@
     --completed-split-text: #888888;
     --delta-ahead: #00ff88;
     --delta-behind: #ff4444;
+    --notes-bg: rgba(100, 150, 200, 0.18);
+    --notes-text: #e8e8e8;
 }
 
 body.light {
@@ -60,39 +62,8 @@ body.light {
     --completed-split-text: #aaaaaa;
     --delta-ahead: #00aa55;
     --delta-behind: #cc0000;
-}
-
-/* Keep dark class for backward compatibility */
-body.dark {
-    --bg-color: #0a0a0a;
-    --container-bg: #1a1a1a;
-    --text-color: #e0e0e0;
-    --timer-color: #00ff88;
-    --timer-bg: #0f0f0f;
-    --timer-paused: #ff4444;
-    --button-bg: #333333;
-    --button-hover: #444444;
-    --settings-bg: #2a5a2a;
-    --settings-hover: #3a6a3a;
-    --pause-bg: #5a4a1a;
-    --pause-text: #e0e0e0;
-    --reset-bg: #5a1a1a;
-    --next-bg: #1a4a5a;
-    --input-border: #333;
-    --splits-header-bg: #0f0f0f;
-    --splits-border: #2a2a2a;
-    --modal-bg: #1a1a1a;
-    --modal-overlay: rgba(0,0,0,0.9);
-    --border-color: #2a2a2a;
-    --split-border: #2a2a2a;
-    --close-color: #888;
-    --close-hover: #fff;
-    --current-split-bg: #2a3540;
-    --split-hover-bg: #222222;
-    --completed-split-bg: #1a1a1a;
-    --completed-split-text: #888888;
-    --delta-ahead: #00ff88;
-    --delta-behind: #ff4444;
+    --notes-bg: rgba(100, 150, 200, 0.08);
+    --notes-text: #222;
 }
 
 body {
@@ -616,6 +587,16 @@ input {
     }
 }
 
+/* Utility classes */
+.hidden {
+    display: none !important;
+}
+
+.modal-divider {
+    margin: 15px 0;
+    border-color: var(--split-border);
+}
+
 /* Modal styles */
 .modal {
     display: none;
@@ -819,6 +800,22 @@ input {
     background-color: #0056b3;
 }
 
+/* Delete button styling */
+.split-item-actions button.delete-btn {
+    background-color: #dc3545;
+    color: white;
+    padding: 5px 10px;
+    font-size: 0.8em;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.split-item-actions button.delete-btn:hover {
+    background-color: #c82333;
+}
+
 /* Edit modal specific styles */
 #edit-split-modal .modal-buttons {
     display: flex;
@@ -917,20 +914,10 @@ input {
     opacity: 1;
 }
 
-#split-notes-display.show {
-    display: block;
-}
-
 #split-notes-display .notes-icon {
     margin-right: 8px;
     opacity: 0.9;
     font-size: 1em;
-}
-
-#split-notes-display .notes-text {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    opacity: 1;
 }
 
 @keyframes fadeIn {
@@ -942,22 +929,6 @@ input {
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-/* Add notes background color variable */
-:root {
-    --notes-bg: rgba(100, 150, 200, 0.12);
-    --notes-text: #333;
-}
-
-body.light {
-    --notes-bg: rgba(100, 150, 200, 0.08);
-    --notes-text: #222;
-}
-
-body.dark {
-    --notes-bg: rgba(100, 150, 200, 0.18);
-    --notes-text: #e8e8e8;
 }
 
 /* Save indicator styles */
